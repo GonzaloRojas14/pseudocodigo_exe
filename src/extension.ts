@@ -50,8 +50,41 @@ export function activate(context: vscode.ExtensionContext): void {
         },
       }
     ),
-    vscode.commands.registerCommand("aed.run", () => runActiveDocument(diagnostics))
+    vscode.commands.registerCommand("aed.run", (uri?: vscode.Uri) => runDocument(diagnostics, uri)),
+    vscode.commands.registerCommand("aed.usarLenguaje", () => usarLenguaje()),
+    vscode.workspace.onDidOpenTextDocument((document) => ofrecerLenguaje(document))
   );
+
+  for (const document of vscode.workspace.textDocuments) void ofrecerLenguaje(document);
+}
+
+/** los apuntes suelen ser .txt o sin extensión: ofrecemos cambiarles el lenguaje */
+const yaPreguntado = new Set<string>();
+
+async function ofrecerLenguaje(document: vscode.TextDocument): Promise<void> {
+  if (document.languageId === LANGUAGE_ID) return;
+  if (document.languageId !== "plaintext" || document.uri.scheme !== "file") return;
+  const key = document.uri.toString();
+  if (yaPreguntado.has(key)) return;
+
+  const head = document.getText().slice(0, 4000);
+  if (!/\bACCI[OÓ]N\b[\s\S]{0,200}\bES\b/i.test(head) || !/\bFIN_ACCI[OÓ]N|FinAccion/i.test(head)) return;
+
+  yaPreguntado.add(key);
+  const answer = await vscode.window.showInformationMessage(
+    "Esto parece pseudocódigo AED. ¿Lo abro como pseudocódigo para tener resaltado, errores y botón de ejecutar?",
+    "Sí"
+  );
+  if (answer === "Sí") await vscode.languages.setTextDocumentLanguage(document, LANGUAGE_ID);
+}
+
+async function usarLenguaje(): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    void vscode.window.showWarningMessage("Abrí primero el archivo de pseudocódigo.");
+    return;
+  }
+  await vscode.languages.setTextDocumentLanguage(editor.document, LANGUAGE_ID);
 }
 
 export function deactivate(): void {
@@ -82,14 +115,19 @@ function toVsDiagnostic(item: Diagnostic): vscode.Diagnostic {
   return diagnostic;
 }
 
-async function runActiveDocument(collection: vscode.DiagnosticCollection): Promise<void> {
+/** una terminal por archivo: volver a ejecutar reemplaza la anterior, como hace Python */
+const terminales = new Map<string, vscode.Terminal>();
+
+async function runDocument(collection: vscode.DiagnosticCollection, uri?: vscode.Uri): Promise<void> {
   const editor = vscode.window.activeTextEditor;
-  if (!editor) {
+  const document = uri
+    ? await vscode.workspace.openTextDocument(uri)
+    : editor?.document;
+
+  if (!document) {
     void vscode.window.showWarningMessage("Abrí un archivo de pseudocódigo para ejecutarlo.");
     return;
   }
-
-  const document = editor.document;
   if (document.isDirty) await document.save();
 
   const { program, diagnostics } = analyze(document.getText());
@@ -103,15 +141,20 @@ async function runActiveDocument(collection: vscode.DiagnosticCollection): Promi
       : "No se puede ejecutar: el algoritmo tiene errores de sintaxis.";
     const action = await vscode.window.showErrorMessage(message, "Ir al error");
     if (action && first) {
+      const target = editor?.document === document ? editor : await vscode.window.showTextDocument(document);
       const position = new vscode.Position(Math.max(0, first.pos.line - 1), Math.max(0, first.pos.col - 1));
-      editor.selection = new vscode.Selection(position, position);
-      editor.revealRange(new vscode.Range(position, position));
+      target.selection = new vscode.Selection(position, position);
+      target.revealRange(new vscode.Range(position, position));
     }
     return;
   }
 
+  const key = document.uri.toString();
+  terminales.get(key)?.dispose();
+
   const pty = new PseudocodeTerminal(program);
   const terminal = vscode.window.createTerminal({ name: `AED: ${program.name}`, pty });
+  terminales.set(key, terminal);
   terminal.show();
 }
 

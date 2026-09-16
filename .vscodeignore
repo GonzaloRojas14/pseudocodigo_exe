@@ -1,6 +1,9 @@
 .vscode/**
+.vscode-test/**
+.vscode-test.mjs
 src/**
 test/**
+test-integration/**
 node_modules/**
 tsconfig.json
 build.mjs

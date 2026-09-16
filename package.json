@@ -24,8 +24,10 @@
         ],
         "extensions": [
           ".frre",
-          ".pseudo"
+          ".pseudo",
+          ".aed"
         ],
+        "firstLine": "^\\s*(//.*|/\\*[\\s\\S]*?\\*/|#.*)?\\s*ACCI[OÓ]N\\b",
         "configuration": "./language-configuration.json"
       }
     ],
@@ -39,8 +41,14 @@
     "commands": [
       {
         "command": "aed.run",
-        "title": "AED: Ejecutar pseudocódigo",
+        "title": "Ejecutar pseudocódigo AED",
+        "category": "AED",
         "icon": "$(play)"
+      },
+      {
+        "command": "aed.usarLenguaje",
+        "title": "Usar pseudocódigo AED en este archivo",
+        "category": "AED"
       }
     ],
     "keybindings": [
@@ -49,6 +57,17 @@
         "key": "ctrl+alt+n",
         "mac": "cmd+alt+n",
         "when": "editorTextFocus && editorLangId == aed-pseudocodigo"
+      },
+      {
+        "command": "aed.run",
+        "key": "ctrl+f5",
+        "mac": "cmd+f5",
+        "when": "editorTextFocus && editorLangId == aed-pseudocodigo"
+      },
+      {
+        "command": "aed.run",
+        "key": "f5",
+        "when": "editorTextFocus && editorLangId == aed-pseudocodigo && !inDebugMode"
       }
     ],
     "menus": {
@@ -56,7 +75,27 @@
         {
           "command": "aed.run",
           "when": "editorLangId == aed-pseudocodigo",
-          "group": "navigation"
+          "group": "navigation@1"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "aed.run",
+          "when": "editorLangId == aed-pseudocodigo",
+          "group": "aed@1"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "aed.run",
+          "when": "resourceExtname == .frre || resourceExtname == .pseudo || resourceExtname == .aed",
+          "group": "navigation@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "aed.run",
+          "when": "editorLangId == aed-pseudocodigo"
         }
       ]
     }
@@ -65,12 +104,16 @@
     "compile": "tsc --noEmit -p tsconfig.json && node build.mjs",
     "watch": "node build.mjs --watch",
     "test": "node --import tsx --test test/*.test.ts",
+    "test:vscode": "node build.mjs && vscode-test",
     "package": "npm run compile && npx --yes @vscode/vsce package --no-dependencies"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@types/vscode": "^1.85.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^3.1.0",
     "esbuild": "^0.20.0",
+    "mocha": "^12.0.1",
     "tsx": "^4.7.0",
     "typescript": "^5.4.0"
   }
