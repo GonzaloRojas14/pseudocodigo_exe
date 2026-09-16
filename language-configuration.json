@@ -1,0 +1,26 @@
+{
+  "comments": {
+    "lineComment": "//",
+    "blockComment": ["/*", "*/"]
+  },
+  "brackets": [
+    ["(", ")"],
+    ["[", "]"]
+  ],
+  "autoClosingPairs": [
+    { "open": "(", "close": ")" },
+    { "open": "[", "close": "]" },
+    { "open": "\"", "close": "\"", "notIn": ["string", "comment"] },
+    { "open": "'", "close": "'", "notIn": ["string", "comment"] }
+  ],
+  "surroundingPairs": [
+    ["(", ")"],
+    ["[", "]"],
+    ["\"", "\""],
+    ["'", "'"]
+  ],
+  "indentationRules": {
+    "increaseIndentPattern": "(?i)^\\s*(ACCION|AMBIENTE|PROCESO|ALGORITMO|SI|SINO|CONTRARIO|SEGUN|MIENTRAS|REPETIR|PARA|FUNCION|PROCEDIMIENTO|[A-Za-z_][A-Za-z0-9_]*\\s*=\\s*REGISTRO)\\b.*$",
+    "decreaseIndentPattern": "(?i)^\\s*(FIN_SI|FINSI|FIN_MIENTRAS|FINMIENTRAS|FIN_PARA|FINPARA|FIN_SEGUN|FINSEGUN|FIN_REGISTRO|FINREGISTRO|FIN_FUNCION|FINFUNCION|FIN_PROCEDIMIENTO|FINPROCEDIMIENTO|FIN_ACCION|FINACCION|SINO|CONTRARIO|HASTA)\\b.*$"
+  }
+}

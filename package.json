@@ -1,0 +1,77 @@
+{
+  "name": "aed-pseudocodigo",
+  "displayName": "AED Pseudocódigo (UTN-FRRe)",
+  "description": "Resaltado, diagnósticos y ejecución del pseudocódigo de Algoritmos y Estructuras de Datos (UTN-FRRe).",
+  "version": "0.1.0",
+  "publisher": "gonzalo",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "languages": [
+      {
+        "id": "aed-pseudocodigo",
+        "aliases": [
+          "Pseudocódigo AED",
+          "aed"
+        ],
+        "extensions": [
+          ".frre",
+          ".pseudo"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "aed-pseudocodigo",
+        "scopeName": "source.aed",
+        "path": "./syntaxes/aed.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "aed.run",
+        "title": "AED: Ejecutar pseudocódigo",
+        "icon": "$(play)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "aed.run",
+        "key": "ctrl+alt+n",
+        "mac": "cmd+alt+n",
+        "when": "editorTextFocus && editorLangId == aed-pseudocodigo"
+      }
+    ],
+    "menus": {
+      "editor/title/run": [
+        {
+          "command": "aed.run",
+          "when": "editorLangId == aed-pseudocodigo",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "tsc --noEmit -p tsconfig.json && node build.mjs",
+    "watch": "node build.mjs --watch",
+    "test": "node --import tsx --test test/*.test.ts",
+    "package": "npm run compile && npx --yes @vscode/vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.20.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}

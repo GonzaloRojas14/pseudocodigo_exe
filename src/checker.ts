@@ -1,0 +1,460 @@
+import type {
+  Declaration,
+  Expr,
+  Pos,
+  Program,
+  RecordDecl,
+  Stmt,
+  SubprogramDecl,
+  TypeNode,
+} from "./ast";
+import { diag, type Diagnostic } from "./diagnostics";
+
+export const BUILTIN_FUNCTIONS = new Set(["abso"]);
+/** predicados de archivo/secuencia: se chequean acá, se ejecutan en la fase 2 */
+const FILE_PREDICATES = new Set(["fda", "nfda", "fds", "nfds"]);
+
+interface SymbolInfo {
+  name: string;
+  type?: TypeNode;
+  kind: "var" | "const" | "param" | "counter" | "function";
+  pos: Pos;
+}
+
+class Scope {
+  private symbols = new Map<string, SymbolInfo>();
+
+  constructor(readonly parent?: Scope) {}
+
+  declare(info: SymbolInfo): SymbolInfo | undefined {
+    const key = info.name.toLowerCase();
+    const previous = this.symbols.get(key);
+    this.symbols.set(key, info);
+    return previous;
+  }
+
+  lookup(name: string): SymbolInfo | undefined {
+    return this.symbols.get(name.toLowerCase()) ?? this.parent?.lookup(name);
+  }
+
+  has(name: string): boolean {
+    return this.symbols.has(name.toLowerCase());
+  }
+}
+
+export function check(program: Program): Diagnostic[] {
+  return new Checker(program).run();
+}
+
+class Checker {
+  private diagnostics: Diagnostic[] = [];
+  private types = new Map<string, RecordDecl>();
+  private subprograms = new Map<string, SubprogramDecl>();
+  private global = new Scope();
+  private assigned = new Set<string>();
+  private used = new Set<string>();
+
+  constructor(private program: Program) {}
+
+  run(): Diagnostic[] {
+    if (this.program.name.includes(".")) {
+      this.warn(
+        this.program.namePos,
+        `El nombre de la ACCION no lleva puntos ni espacios: "${this.program.name}" iría como "${this.program.name.replace(/\./g, "_")}" (errores-y-trampas #26).`
+      );
+    }
+    if (this.program.notations.has("moderna") && this.program.notations.has("vieja")) {
+      this.warn(
+        this.program.pos,
+        "El archivo mezcla la notación moderna (Proceso / SINO / FIN_SI) con la vieja (Algoritmo / Contrario / FinSi). Conviene usar una sola (sintaxis-completa §1)."
+      );
+    }
+
+    this.collectDeclarations(this.program.declarations, this.global);
+
+    for (const decl of this.program.declarations) {
+      if (decl.kind === "subprogram") this.checkSubprogram(decl);
+    }
+    this.checkStatements(this.program.body, this.global);
+
+    this.reportUnassigned();
+    this.diagnostics.sort((a, b) => a.pos.offset - b.pos.offset);
+    return this.diagnostics;
+  }
+
+  // ── declaraciones ────────────────────────────────────────────────────────
+
+  private collectDeclarations(decls: Declaration[], scope: Scope): void {
+    // primero los REGISTRO: una variable puede usar un tipo declarado más abajo
+    for (const decl of decls) {
+      if (decl.kind !== "record") continue;
+      const key = decl.name.toLowerCase();
+      if (this.types.has(key)) {
+        this.warn(decl.pos, `El registro "${decl.name}" ya estaba declarado.`);
+      }
+      this.types.set(key, decl);
+    }
+    for (const decl of decls) {
+      switch (decl.kind) {
+        case "record": {
+          for (const field of decl.fields) this.checkTypeRef(field.type);
+          break;
+        }
+        case "const": {
+          const previous = scope.declare({ name: decl.name, kind: "const", pos: decl.pos });
+          if (previous) this.warn(decl.pos, `"${decl.name}" ya estaba declarada.`);
+          this.assigned.add(decl.name.toLowerCase());
+          break;
+        }
+        case "var": {
+          this.checkTypeRef(decl.type);
+          for (const name of decl.names) {
+            const previous = scope.declare({ name, type: decl.type, kind: "var", pos: decl.pos });
+            if (previous) this.warn(decl.pos, `"${name}" ya estaba declarada.`);
+            // archivos y secuencias se "asignan" al leerlos/abrirlos
+            if (decl.type.kind === "archivo" || decl.type.kind === "secuencia") {
+              this.assigned.add(name.toLowerCase());
+            }
+          }
+          break;
+        }
+        case "subprogram": {
+          const key = decl.name.toLowerCase();
+          if (this.subprograms.has(key)) {
+            this.warn(decl.pos, `"${decl.name}" ya estaba declarado.`);
+          }
+          this.subprograms.set(key, decl);
+          scope.declare({ name: decl.name, type: decl.returnType, kind: "function", pos: decl.pos });
+          this.assigned.add(key);
+          break;
+        }
+      }
+    }
+  }
+
+  private checkTypeRef(type: TypeNode): void {
+    switch (type.kind) {
+      case "named":
+        if (!this.types.has(type.name.toLowerCase())) {
+          this.error(type.pos, `El tipo "${type.name}" no está declarado como REGISTRO en el Ambiente.`);
+        }
+        break;
+      case "array":
+        for (const dim of type.dims) {
+          if (dim.low > dim.high) {
+            this.error(type.pos, `Los límites del arreglo están al revés: [${dim.low}..${dim.high}].`);
+          }
+        }
+        this.checkTypeRef(type.element);
+        break;
+      case "archivo":
+      case "secuencia":
+        this.checkTypeRef(type.element);
+        break;
+      case "subrange":
+        if (type.low > type.high) {
+          this.error(type.pos, `Los límites del subrango están al revés: ${type.low}..${type.high}.`);
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
+  private checkSubprogram(sub: SubprogramDecl): void {
+    const scope = new Scope(this.global);
+    for (const param of sub.params) {
+      this.checkTypeRef(param.type);
+      scope.declare({ name: param.name, type: param.type, kind: "param", pos: param.pos });
+      this.assigned.add(param.name.toLowerCase());
+    }
+    this.collectDeclarations(sub.locals, scope);
+    for (const local of sub.locals) {
+      if (local.kind === "subprogram") this.checkSubprogram(local);
+    }
+    if (sub.isFunction) {
+      scope.declare({ name: sub.name, type: sub.returnType, kind: "var", pos: sub.pos });
+      if (!this.assignsOwnName(sub)) {
+        this.warn(
+          sub.pos,
+          `La función "${sub.name}" nunca asigna su resultado: el retorno se asigna al nombre de la función (${sub.name} := ...).`
+        );
+      }
+    }
+    this.checkStatements(sub.body, scope);
+  }
+
+  private assignsOwnName(sub: SubprogramDecl): boolean {
+    const target = sub.name.toLowerCase();
+    let found = false;
+    const visit = (stmts: Stmt[]): void => {
+      for (const stmt of stmts) {
+        if (found) return;
+        switch (stmt.kind) {
+          case "assign":
+            if (stmt.target.kind === "ident" && stmt.target.name.toLowerCase() === target) found = true;
+            break;
+          case "if":
+            visit(stmt.then);
+            if (stmt.else) visit(stmt.else);
+            break;
+          case "segun":
+            for (const branch of stmt.branches) visit(branch.body);
+            break;
+          case "while":
+          case "repeat":
+          case "for":
+            visit(stmt.body);
+            break;
+          default:
+            break;
+        }
+      }
+    };
+    visit(sub.body);
+    return found;
+  }
+
+  // ── sentencias ───────────────────────────────────────────────────────────
+
+  private checkStatements(stmts: Stmt[], scope: Scope): void {
+    for (const stmt of stmts) this.checkStatement(stmt, scope);
+  }
+
+  private checkStatement(stmt: Stmt, scope: Scope): void {
+    switch (stmt.kind) {
+      case "assign": {
+        const target = stmt.target;
+        const root = rootName(target);
+        if (root) {
+          const symbol = scope.lookup(root);
+          if (symbol?.kind === "const") {
+            this.error(stmt.pos, `"${root}" es una constante: no se le puede asignar un valor.`);
+          }
+          this.assigned.add(root.toLowerCase());
+        }
+        this.checkExpr(target, scope);
+        this.checkExpr(stmt.value, scope);
+        break;
+      }
+      case "if":
+        this.checkExpr(stmt.cond, scope);
+        this.checkStatements(stmt.then, scope);
+        if (stmt.else) this.checkStatements(stmt.else, scope);
+        break;
+      case "segun":
+        this.checkExpr(stmt.subject, scope);
+        for (const branch of stmt.branches) this.checkStatements(branch.body, scope);
+        break;
+      case "while":
+        this.checkExpr(stmt.cond, scope);
+        this.checkStatements(stmt.body, scope);
+        break;
+      case "repeat":
+        this.checkStatements(stmt.body, scope);
+        this.checkExpr(stmt.cond, scope);
+        break;
+      case "for":
+        scope.declare({ name: stmt.counter, kind: "counter", pos: stmt.pos, type: { kind: "scalar", name: "entero", pos: stmt.pos } });
+        this.assigned.add(stmt.counter.toLowerCase());
+        this.checkExpr(stmt.from, scope);
+        this.checkExpr(stmt.to, scope);
+        if (stmt.step) this.checkExpr(stmt.step, scope);
+        this.checkStatements(stmt.body, scope);
+        break;
+      case "io": {
+        for (const arg of stmt.args) this.checkExpr(arg, scope);
+        if (stmt.op === "LEER") {
+          // LEER(arch, reg) carga reg; LEER(a, b) carga a y b
+          for (const arg of stmt.args) {
+            const root = rootName(arg);
+            if (root) this.assigned.add(root.toLowerCase());
+          }
+        }
+        break;
+      }
+      case "call": {
+        const sub = this.subprograms.get(stmt.name.toLowerCase());
+        if (!sub) {
+          this.error(stmt.pos, `El procedimiento "${stmt.name}" no está declarado en el Ambiente.`);
+          break;
+        }
+        if (sub.isFunction) {
+          this.warn(stmt.pos, `"${stmt.name}" es una FUNCION: se invoca dentro de una expresión, no como instrucción suelta.`);
+        }
+        if (stmt.hadParens && sub.params.length === 0) {
+          this.info(stmt.pos, `Un procedimiento sin parámetros se invoca por su nombre solo: "${stmt.name}".`);
+        }
+        if (stmt.args.length !== sub.params.length) {
+          this.error(
+            stmt.pos,
+            `"${stmt.name}" espera ${sub.params.length} parámetro(s) y recibió ${stmt.args.length}.`
+          );
+        }
+        for (const arg of stmt.args) this.checkExpr(arg, scope);
+        sub.params.forEach((param, idx) => {
+          if (!param.byRef) return;
+          const arg = stmt.args[idx];
+          if (!arg) return;
+          const root = rootName(arg);
+          if (!root) {
+            this.error(arg.pos, `El parámetro "${param.name}" es por referencia (var): hay que pasarle una variable.`);
+          } else {
+            this.assigned.add(root.toLowerCase());
+          }
+        });
+        break;
+      }
+      case "file": {
+        for (const arg of stmt.args) this.checkExpr(arg, scope);
+        for (const arg of stmt.args) {
+          const root = rootName(arg);
+          if (root) this.assigned.add(root.toLowerCase());
+        }
+        break;
+      }
+    }
+  }
+
+  // ── expresiones ──────────────────────────────────────────────────────────
+
+  private checkExpr(expr: Expr, scope: Scope): TypeNode | undefined {
+    switch (expr.kind) {
+      case "number":
+      case "string":
+      case "bool":
+      case "existe":
+        return undefined;
+      case "ident": {
+        if (FILE_PREDICATES.has(expr.name.toLowerCase())) return undefined;
+        const symbol = scope.lookup(expr.name);
+        if (!symbol) {
+          this.error(expr.pos, `"${expr.name}" no está declarada en el Ambiente.`);
+          return undefined;
+        }
+        this.used.add(expr.name.toLowerCase());
+        return symbol.type;
+      }
+      case "field": {
+        const targetType = this.checkExpr(expr.target, scope);
+        const record = this.resolveRecord(targetType);
+        if (!record) return undefined;
+        const field = record.fields.find((f) => f.name.toLowerCase() === expr.field.toLowerCase());
+        if (!field) {
+          this.error(
+            expr.pos,
+            `El registro "${record.name}" no tiene un campo "${expr.field}". Campos declarados: ${record.fields
+              .map((f) => f.name)
+              .join(", ")} (errores-y-trampas #10).`
+          );
+          return undefined;
+        }
+        return field.type;
+      }
+      case "index": {
+        const targetType = this.checkExpr(expr.target, scope);
+        for (const idx of expr.indices) this.checkExpr(idx, scope);
+        if (!targetType) return undefined;
+        if (targetType.kind !== "array") {
+          this.error(expr.pos, "Solo se pueden indexar arreglos con [ ].");
+          return undefined;
+        }
+        if (expr.indices.length !== targetType.dims.length) {
+          this.error(
+            expr.pos,
+            `El arreglo tiene ${targetType.dims.length} dimensión(es) y se lo indexó con ${expr.indices.length}.`
+          );
+          return undefined;
+        }
+        expr.indices.forEach((idx, i) => {
+          const dim = targetType.dims[i];
+          if (idx.kind === "number" && (idx.value < dim.low || idx.value > dim.high)) {
+            this.error(idx.pos, `El índice ${idx.value} queda fuera del rango declarado [${dim.low}..${dim.high}].`);
+          }
+        });
+        return targetType.element;
+      }
+      case "callExpr": {
+        for (const arg of expr.args) this.checkExpr(arg, scope);
+        const key = expr.callee.toLowerCase();
+        if (FILE_PREDICATES.has(key) || BUILTIN_FUNCTIONS.has(key)) return undefined;
+        const sub = this.subprograms.get(key);
+        if (!sub) {
+          this.error(expr.pos, `La función "${expr.callee}" no está declarada en el Ambiente.`);
+          return undefined;
+        }
+        if (expr.args.length !== sub.params.length) {
+          this.error(
+            expr.pos,
+            `"${expr.callee}" espera ${sub.params.length} parámetro(s) y recibió ${expr.args.length}.`
+          );
+        }
+        this.used.add(key);
+        return sub.returnType;
+      }
+      case "unary":
+        this.checkExpr(expr.operand, scope);
+        return undefined;
+      case "binary":
+        this.checkExpr(expr.left, scope);
+        this.checkExpr(expr.right, scope);
+        return undefined;
+    }
+  }
+
+  private resolveRecord(type: TypeNode | undefined): RecordDecl | undefined {
+    if (!type) return undefined;
+    if (type.kind === "named") return this.types.get(type.name.toLowerCase());
+    if (type.kind === "archivo" || type.kind === "secuencia") return this.resolveRecord(type.element);
+    return undefined;
+  }
+
+  // ── reportes finales ─────────────────────────────────────────────────────
+
+  private reportUnassigned(): void {
+    const seen = new Set<string>();
+    const visitScopeDecls = (decls: Declaration[]): void => {
+      for (const decl of decls) {
+        if (decl.kind === "var") {
+          for (const name of decl.names) {
+            const key = name.toLowerCase();
+            if (seen.has(key)) continue;
+            seen.add(key);
+            if (this.used.has(key) && !this.assigned.has(key)) {
+              this.warn(
+                decl.pos,
+                `"${name}" se usa en un cálculo pero nunca se le asigna valor (ni con := ni con LEER) — errores-y-trampas #14.`
+              );
+            }
+          }
+        }
+        if (decl.kind === "subprogram") visitScopeDecls(decl.locals);
+      }
+    };
+    visitScopeDecls(this.program.declarations);
+  }
+
+  private error(pos: Pos, message: string): void {
+    this.diagnostics.push(diag(pos, message, "error"));
+  }
+
+  private warn(pos: Pos, message: string): void {
+    this.diagnostics.push(diag(pos, message, "warning"));
+  }
+
+  private info(pos: Pos, message: string): void {
+    this.diagnostics.push(diag(pos, message, "info"));
+  }
+}
+
+function rootName(expr: Expr): string | undefined {
+  switch (expr.kind) {
+    case "ident":
+      return expr.name;
+    case "field":
+    case "index":
+      return rootName(expr.target);
+    default:
+      return undefined;
+  }
+}

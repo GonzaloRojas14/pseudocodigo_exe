@@ -1,0 +1,70 @@
+// Ejemplo para probar la extensión: apretá "▶ Ejecutar" arriba de la ACCION
+// (o Cmd+Alt+N). Se ejecuta en la terminal integrada: cuando pide datos,
+// escribilos ahí y apretá Enter.
+
+ACCION demo_nucleo ES
+    Ambiente
+        iva = 1.21
+
+        fecha = REGISTRO
+            anio : 1900..9999
+            mes  : 1..12
+            dia  : 1..31
+        FIN_REGISTRO
+
+        articulo = REGISTRO
+            nombre : AN(50)
+            precio : real
+            alta   : fecha
+        FIN_REGISTRO
+
+        art : articulo
+        V : ARREGLO[1..5] de entero
+        i, suma : entero
+        op : caracter
+
+        FUNCION con_iva(precio : real) : real ES
+            Proceso
+                con_iva := precio * iva
+        FIN_FUNCION
+
+        PROCEDIMIENTO cargar_vector(var X : ARREGLO[1..5] de entero) ES
+            Proceso
+                PARA i := 1 HASTA 5 HACER
+                    X[i] := i * i
+                FIN_PARA
+        FIN_PROCEDIMIENTO
+
+    Proceso
+        ESCRIBIR("Ingrese el nombre del articulo: ")
+        LEER(art.nombre)
+        ESCRIBIR("Ingrese el precio: ")
+        LEER(art.precio)
+        ESCRIBIR("Ingrese la fecha de alta (anio mes dia): ")
+        LEER(art.alta.anio, art.alta.mes, art.alta.dia)
+
+        ESCRIBIR("── ", art.nombre, " ──")
+        ESCRIBIR("Precio con IVA: ", con_iva(art.precio))
+        ESCRIBIR("Alta: ", art.alta.dia, "/", art.alta.mes, "/", art.alta.anio)
+
+        cargar_vector(V)
+        suma := 0
+        PARA i := 1 HASTA 5 HACER
+            suma := suma + V[i]
+        FIN_PARA
+        ESCRIBIR("Suma de cuadrados del 1 al 5: ", suma)
+
+        PARA i := 10 HASTA 0, -5 HACER
+            ESCRIBIR("cuenta regresiva: ", i)
+        FIN_PARA
+
+        REPETIR
+            ESCRIBIR("Desea continuar? S/N")
+            LEER(op)
+            SEGUN op HACER
+                'S' : ESCRIBIR("seguimos")
+                'N' : ESCRIBIR("listo")
+                otros : ESCRIBIR("opcion INCORRECTA")
+            FIN_SEGUN
+        HASTA QUE (op = 'N')
+FIN_ACCION
