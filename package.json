@@ -2,7 +2,7 @@
   "name": "aed-pseudocodigo",
   "displayName": "AED Pseudocódigo (UTN-FRRe)",
   "description": "Resaltado, diagnósticos y ejecución del pseudocódigo de Algoritmos y Estructuras de Datos (UTN-FRRe).",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "gonzalo",
   "private": true,
   "license": "MIT",
@@ -27,7 +27,7 @@
           ".pseudo",
           ".aed"
         ],
-        "firstLine": "^\\s*(//.*|/\\*[\\s\\S]*?\\*/|#.*)?\\s*ACCI[OÓ]N\\b",
+        "firstLine": "^\\s*(//.*|#.*)?\\s*[Aa][Cc][Cc][Ii][OoÓó][Nn]\\b",
         "configuration": "./language-configuration.json"
       }
     ],
@@ -105,7 +105,8 @@
     "watch": "node build.mjs --watch",
     "test": "node --import tsx --test test/*.test.ts",
     "test:vscode": "node build.mjs && vscode-test",
-    "package": "npm run compile && npx --yes @vscode/vsce package --no-dependencies"
+    "package": "npm run compile && npx --yes @vscode/vsce package --no-dependencies",
+    "check:resaltado": "node scripts/tm-check.cjs ejemplos/demo.frre"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
@@ -115,6 +116,8 @@
     "esbuild": "^0.20.0",
     "mocha": "^12.0.1",
     "tsx": "^4.7.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
   }
 }

@@ -254,3 +254,40 @@ test("acepta identificadores con ñ y tildes", () => {
   assert.deepEqual(errors(source), []);
   assert.ok(analyze(source).ok);
 });
+
+test("código pegado de un PDF: comillas tipográficas, menos Unicode y espacios duros", () => {
+  const source =
+    "﻿" +
+    [
+      "ACCION pegado_del_pdf ES",
+      "    Ambiente",
+      "    carrera : (‘ISI’,‘IEM’)",
+      "        a, b : entero",
+      "    Proceso",
+      "        carrera := ‘ISI’",
+      "        a := 10 − 3",
+      "        b := 4 × 2",
+      "        SI (a ≠ b) Y (a ≥ 2) ENTONCES",
+      "            ESCRIBIR(“distintos”, a)",
+      "        FIN_SI",
+      "FIN_ACCION",
+    ].join("\n");
+  assert.deepEqual(errors(source), []);
+  const avisos = warnings(source);
+  assert.ok(avisos.some((m) => m.includes("Comillas tipográficas")), avisos.join(" | "));
+  assert.ok(avisos.some((m) => m.includes("El signo menos")));
+});
+
+test("y ese código pegado además se ejecuta", async () => {
+  const source = [
+    "ACCION pegado ES",
+    "    Ambiente",
+    "        a : entero",
+    "    Proceso",
+    "        a := 10 − 3",
+    "        ESCRIBIR(“resultado: ”, a)",
+    "FIN_ACCION",
+  ].join("\n");
+  const output = await execute(source);
+  assert.deepEqual(output, ["resultado: 7"]);
+});

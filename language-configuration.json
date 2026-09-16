@@ -11,7 +11,8 @@
     { "open": "(", "close": ")" },
     { "open": "[", "close": "]" },
     { "open": "\"", "close": "\"", "notIn": ["string", "comment"] },
-    { "open": "'", "close": "'", "notIn": ["string", "comment"] }
+    { "open": "'", "close": "'", "notIn": ["string", "comment"] },
+    { "open": "/*", "close": " */", "notIn": ["string"] }
   ],
   "surroundingPairs": [
     ["(", ")"],
@@ -19,8 +20,33 @@
     ["\"", "\""],
     ["'", "'"]
   ],
+  "wordPattern": {
+    "pattern": "[\\p{L}_][\\p{L}\\p{N}_]*",
+    "flags": "u"
+  },
   "indentationRules": {
-    "increaseIndentPattern": "(?i)^\\s*(ACCION|AMBIENTE|PROCESO|ALGORITMO|SI|SINO|CONTRARIO|SEGUN|MIENTRAS|REPETIR|PARA|FUNCION|PROCEDIMIENTO|[A-Za-z_][A-Za-z0-9_]*\\s*=\\s*REGISTRO)\\b.*$",
-    "decreaseIndentPattern": "(?i)^\\s*(FIN_SI|FINSI|FIN_MIENTRAS|FINMIENTRAS|FIN_PARA|FINPARA|FIN_SEGUN|FINSEGUN|FIN_REGISTRO|FINREGISTRO|FIN_FUNCION|FINFUNCION|FIN_PROCEDIMIENTO|FINPROCEDIMIENTO|FIN_ACCION|FINACCION|SINO|CONTRARIO|HASTA)\\b.*$"
+    "increaseIndentPattern": {
+      "pattern": "^\\s*(ACCI[OÓ]N\\b|AMBIENTE\\b|PROCESO\\b|ALGORITMO\\b|SI\\b.*\\bENTONCES\\b|SINO\\b|CONTRARIO\\b|SEG[UÚ]N\\b|MIENTRAS\\b.*\\bHACER\\b|REPETIR\\b|PARA\\b.*\\bHACER\\b|FUNCI[OÓ]N\\b|PROCEDIMIENTO\\b|[\\p{L}_][\\p{L}\\p{N}_]*\\s*[:=]\\s*REGISTRO\\b)",
+      "flags": "iu"
+    },
+    "decreaseIndentPattern": {
+      "pattern": "^\\s*(FIN_?SI\\b|FIN_?MIENTRAS\\b|FIN_?PARA\\b|FIN_?SEG[UÚ]N\\b|FIN_?REGISTRO\\b|FIN_?FUNCI[OÓ]N\\b|FIN_?PROCEDIMIENTO\\b|FIN_?PROC\\b|FIN_?ACCI[OÓ]N\\b|FIN_?PROCESO\\b|FIN_?ALGORITMO\\b|SINO\\b|CONTRARIO\\b|HASTA\\b|PROCESO\\b|ALGORITMO\\b)",
+      "flags": "iu"
+    }
+  },
+  "onEnterRules": [
+    {
+      "beforeText": {
+        "pattern": "^\\s*(SI\\b.*\\bENTONCES|SINO|CONTRARIO|MIENTRAS\\b.*\\bHACER|PARA\\b.*\\bHACER|REPETIR|SEG[UÚ]N\\b.*\\bHACER)\\s*:?\\s*$",
+        "flags": "iu"
+      },
+      "action": { "indent": "indent" }
+    }
+  ],
+  "folding": {
+    "markers": {
+      "start": "^\\s*(ACCI[OÓ]N|SI\\b|MIENTRAS\\b|PARA\\b|SEG[UÚ]N\\b|REPETIR\\b|FUNCI[OÓ]N|PROCEDIMIENTO)\\b",
+      "end": "^\\s*(FIN_?(SI|MIENTRAS|PARA|SEG[UÚ]N|ACCI[OÓ]N|FUNCI[OÓ]N|PROCEDIMIENTO)|HASTA\\b)"
+    }
   }
 }

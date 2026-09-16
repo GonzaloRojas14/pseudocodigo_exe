@@ -7,7 +7,13 @@ import { parse } from "./parser";
 
 const LANGUAGE_ID = "aed-pseudocodigo";
 
-export function activate(context: vscode.ExtensionContext): void {
+export interface AedApi {
+  /** ejecuta el documento y devuelve la terminal, para poder probarla desde los tests */
+  ejecutar(uri?: vscode.Uri): Promise<PseudocodeTerminal | undefined>;
+  analizar(source: string): { ok: boolean; diagnosticos: Diagnostic[] };
+}
+
+export function activate(context: vscode.ExtensionContext): AedApi {
   const diagnostics = vscode.languages.createDiagnosticCollection(LANGUAGE_ID);
   context.subscriptions.push(diagnostics);
 
@@ -56,6 +62,17 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   for (const document of vscode.workspace.textDocuments) void ofrecerLenguaje(document);
+
+  return {
+    ejecutar: (uri) => runDocument(diagnostics, uri),
+    analizar: (source) => {
+      const { program, diagnostics: encontrados } = analyze(source);
+      return {
+        ok: !!program && !encontrados.some((d) => d.severity === "error"),
+        diagnosticos: encontrados,
+      };
+    },
+  };
 }
 
 /** los apuntes suelen ser .txt o sin extensión: ofrecemos cambiarles el lenguaje */
@@ -73,7 +90,8 @@ async function ofrecerLenguaje(document: vscode.TextDocument): Promise<void> {
   yaPreguntado.add(key);
   const answer = await vscode.window.showInformationMessage(
     "Esto parece pseudocódigo AED. ¿Lo abro como pseudocódigo para tener resaltado, errores y botón de ejecutar?",
-    "Sí"
+    "Sí",
+    "Ahora no"
   );
   if (answer === "Sí") await vscode.languages.setTextDocumentLanguage(document, LANGUAGE_ID);
 }
@@ -118,7 +136,10 @@ function toVsDiagnostic(item: Diagnostic): vscode.Diagnostic {
 /** una terminal por archivo: volver a ejecutar reemplaza la anterior, como hace Python */
 const terminales = new Map<string, vscode.Terminal>();
 
-async function runDocument(collection: vscode.DiagnosticCollection, uri?: vscode.Uri): Promise<void> {
+async function runDocument(
+  collection: vscode.DiagnosticCollection,
+  uri?: vscode.Uri
+): Promise<PseudocodeTerminal | undefined> {
   const editor = vscode.window.activeTextEditor;
   const document = uri
     ? await vscode.workspace.openTextDocument(uri)
@@ -126,9 +147,9 @@ async function runDocument(collection: vscode.DiagnosticCollection, uri?: vscode
 
   if (!document) {
     void vscode.window.showWarningMessage("Abrí un archivo de pseudocódigo para ejecutarlo.");
-    return;
+    return undefined;
   }
-  if (document.isDirty) await document.save();
+  // se ejecuta el texto que está en pantalla: no hace falta guardar ni tener carpeta abierta
 
   const { program, diagnostics } = analyze(document.getText());
   collection.set(document.uri, diagnostics.map(toVsDiagnostic));
@@ -146,7 +167,7 @@ async function runDocument(collection: vscode.DiagnosticCollection, uri?: vscode
       target.selection = new vscode.Selection(position, position);
       target.revealRange(new vscode.Range(position, position));
     }
-    return;
+    return undefined;
   }
 
   const key = document.uri.toString();
@@ -156,6 +177,7 @@ async function runDocument(collection: vscode.DiagnosticCollection, uri?: vscode
   const terminal = vscode.window.createTerminal({ name: `AED: ${program.name}`, pty });
   terminales.set(key, terminal);
   terminal.show();
+  return pty;
 }
 
 const RESET = "\x1b[0m";
@@ -163,7 +185,7 @@ const DIM = "\x1b[2m";
 const RED = "\x1b[31m";
 const YELLOW = "\x1b[33m";
 
-class PseudocodeTerminal implements vscode.Pseudoterminal {
+export class PseudocodeTerminal implements vscode.Pseudoterminal {
   private writeEmitter = new vscode.EventEmitter<string>();
   private closeEmitter = new vscode.EventEmitter<number>();
   readonly onDidWrite = this.writeEmitter.event;
@@ -172,53 +194,95 @@ class PseudocodeTerminal implements vscode.Pseudoterminal {
   private buffer = "";
   private pendingRead?: (line: string) => void;
   private cancelled = false;
+  private terminado = false;
 
   constructor(private program: Program) {}
 
   open(): void {
-    this.line(`${DIM}── ACCION ${this.program.name} ──${RESET}`);
-    void this.execute();
+    // VS Code puede descartar lo que se escriba dentro de open(), antes de que la
+    // terminal esté enganchada: por eso el arranque va en el tick siguiente.
+    setTimeout(() => {
+      this.line(`${DIM}\u2500\u2500 ACCION ${this.program.name} \u2500\u2500${RESET}`);
+      void this.execute();
+    }, 0);
   }
 
   close(): void {
     this.cancelled = true;
-    this.pendingRead?.("");
+    this.resolverLectura("");
   }
 
   handleInput(data: string): void {
-    for (const char of data) {
+    if (this.terminado) return;
+
+    for (let i = 0; i < data.length; i++) {
+      const char = data[i];
+
+      // secuencias de escape (flechas, Home/End, F1...): se ignoran enteras
+      if (char === "\x1b") {
+        const resto = data.slice(i);
+        const escape = /^\x1b(\[[0-9;?]*[ -/]*[@-~]|O.|.)/.exec(resto);
+        i += escape ? escape[0].length - 1 : 0;
+        continue;
+      }
+
       if (char === "\x03") {
         this.cancelled = true;
-        this.line(`${YELLOW}^C — ejecución cancelada${RESET}`);
-        this.pendingRead?.("");
-        this.pendingRead = undefined;
+        this.buffer = "";
+        this.line(`${YELLOW}^C \u2014 ejecución cancelada${RESET}`);
+        this.resolverLectura("");
         continue;
       }
-      if (char === "\r") {
-        const line = this.buffer;
+
+      if (char === "\r" || char === "\n") {
+        // Enter puede llegar como \r\n: la segunda mitad no cuenta
+        if (char === "\n" && data[i - 1] === "\r") continue;
+        const linea = this.buffer;
         this.buffer = "";
         this.writeEmitter.fire("\r\n");
-        const resolve = this.pendingRead;
-        this.pendingRead = undefined;
-        resolve?.(line);
+        this.resolverLectura(linea);
         continue;
       }
-      if (char === "\x7f") {
+
+      if (char === "\x7f" || char === "\b") {
         if (this.buffer.length > 0) {
           this.buffer = this.buffer.slice(0, -1);
           this.writeEmitter.fire("\b \b");
         }
         continue;
       }
+
       if (char >= " ") {
         this.buffer += char;
+        // solo se ve lo que se tipea si el programa está esperando datos
         this.writeEmitter.fire(char);
       }
     }
   }
 
+  /** para los tests: deja correr el programa hasta que pida datos o termine */
+  esperarPausa(): Promise<void> {
+    return new Promise((resolve) => {
+      const revisar = () => {
+        if (this.terminado || this.pendingRead) resolve();
+        else setTimeout(revisar, 10);
+      };
+      revisar();
+    });
+  }
+
+  get finalizado(): boolean {
+    return this.terminado;
+  }
+
+  private resolverLectura(valor: string): void {
+    const resolver = this.pendingRead;
+    this.pendingRead = undefined;
+    resolver?.(valor);
+  }
+
   private line(text: string): void {
-    this.writeEmitter.fire(`${text.replace(/\n/g, "\r\n")}\r\n`);
+    this.writeEmitter.fire(`${text.replace(/\r?\n/g, "\r\n")}\r\n`);
   }
 
   private async execute(): Promise<void> {
@@ -238,7 +302,7 @@ class PseudocodeTerminal implements vscode.Pseudoterminal {
     const started = Date.now();
     try {
       await run(this.program, host);
-      this.line(`${DIM}── fin (${Date.now() - started} ms) ──${RESET}`);
+      this.line(`${DIM}\u2500\u2500 fin (${Date.now() - started} ms) \u2500\u2500${RESET}`);
     } catch (err) {
       if (err instanceof CancelledError) {
         this.line(`${YELLOW}Ejecución cancelada.${RESET}`);
@@ -249,6 +313,7 @@ class PseudocodeTerminal implements vscode.Pseudoterminal {
         this.line(`${RED}Error inesperado: ${err instanceof Error ? err.message : String(err)}${RESET}`);
       }
     }
-    this.line(`${DIM}(cerrá esta terminal cuando quieras)${RESET}`);
+    this.terminado = true;
+    this.line(`${DIM}(podés cerrar esta terminal)${RESET}`);
   }
 }

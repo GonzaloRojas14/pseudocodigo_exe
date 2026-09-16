@@ -167,6 +167,32 @@ const TYPE_CANON: Record<string, string> = {
   alfanumérico: "alfanumerico",
 };
 
+/**
+ * Lo que llega al pegar desde un PDF, las filminas o Word. Se acepta y se avisa,
+ * porque si no el archivo entero queda lleno de "carácter inesperado".
+ */
+const ESPACIOS_RAROS = new Set(["\u00a0", "\u2007", "\u202f", "\u200b", "\u2009", "\u2002", "\u2003"]);
+
+const COMILLAS: Record<string, string> = {
+  '"': '"',
+  "'": "'",
+  "\u201c": "\u201d",
+  "\u2018": "\u2019",
+  "\u201e": "\u201c",
+  "\u00ab": "\u00bb",
+};
+
+const OPERADORES_RAROS: Record<string, { texto: string; aviso: string }> = {
+  "\u2212": { texto: "-", aviso: "El signo menos es -, no − (viene de copiar y pegar)." },
+  "\u2013": { texto: "-", aviso: "El signo menos es -, no – (viene de copiar y pegar)." },
+  "\u2014": { texto: "-", aviso: "El signo menos es -, no — (viene de copiar y pegar)." },
+  "\u2260": { texto: "<>", aviso: "El operador distinto se escribe <>." },
+  "\u2264": { texto: "<=", aviso: "El operador se escribe <=." },
+  "\u2265": { texto: ">=", aviso: "El operador se escribe >=." },
+  "\u00d7": { texto: "*", aviso: "La multiplicación se escribe *." },
+  "\u00f7": { texto: "/", aviso: "La división se escribe /." },
+};
+
 const NAME_START = /[\p{L}_]/u;
 const NAME_PART = /[\p{L}\p{N}_]/u;
 /** nombres "sueltos" de ACCION/FUNCION/PROCEDIMIENTO, que en la práctica llevan puntos: ej2.2.1 */
@@ -184,6 +210,7 @@ export function tokenize(source: string): LexResult {
   let i = 0;
   let line = 1;
   let col = 1;
+  if (source.charCodeAt(0) === 0xfeff) i = 1;
   /** el próximo identificador es el nombre de una ACCION/FUNCION/PROCEDIMIENTO */
   let expectLooseName = false;
 
@@ -214,7 +241,7 @@ export function tokenize(source: string): LexResult {
   while (i < source.length) {
     const ch = at();
 
-    if (ch === " " || ch === "\t" || ch === "\r" || ch === "\n") {
+    if (ch === " " || ch === "\t" || ch === "\r" || ch === "\n" || ESPACIOS_RAROS.has(ch)) {
       advance();
       continue;
     }
@@ -249,8 +276,15 @@ export function tokenize(source: string): LexResult {
     }
 
     // literales de texto
-    if (ch === '"' || ch === "'") {
-      const quote = ch;
+    if (COMILLAS[ch]) {
+      const quote = COMILLAS[ch];
+      if (ch !== '"' && ch !== "'") {
+        notes.push({
+          pos: { line: sl, col: sc, offset: start, length: 1 },
+          message: `Comillas tipográficas (${ch}): vienen de copiar y pegar. La cátedra usa " o '.`,
+          severity: "warning",
+        });
+      }
       advance();
       let value = "";
       while (i < source.length && at() !== quote && at() !== "\n") {
@@ -404,6 +438,14 @@ export function tokenize(source: string): LexResult {
       advance(2);
       notes.push({ pos: posAt(start, sl, sc), message: "El operador distinto es <>, no != (errores-y-trampas #12 de notación).", severity: "warning" });
       push("<>", "<>", start, sl, sc);
+      continue;
+    }
+
+    const raro = OPERADORES_RAROS[ch];
+    if (raro) {
+      advance();
+      notes.push({ pos: posAt(start, sl, sc), message: raro.aviso, severity: "warning" });
+      push(raro.texto, raro.texto, start, sl, sc);
       continue;
     }
 

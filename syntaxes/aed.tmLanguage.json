@@ -3,35 +3,87 @@
   "name": "Pseudocódigo AED",
   "scopeName": "source.aed",
   "patterns": [
-    { "include": "#comments" },
-    { "include": "#strings" },
-    { "include": "#numbers" },
-    { "include": "#structure" },
-    { "include": "#control" },
-    { "include": "#io" },
-    { "include": "#types" },
-    { "include": "#constants" },
-    { "include": "#operators" }
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#structure"
+    },
+    {
+      "include": "#control"
+    },
+    {
+      "include": "#io"
+    },
+    {
+      "include": "#types"
+    },
+    {
+      "include": "#constants"
+    },
+    {
+      "include": "#operators"
+    }
   ],
   "repository": {
     "comments": {
       "patterns": [
-        { "name": "comment.line.double-slash.aed", "match": "//.*$" },
-        { "name": "comment.line.number-sign.aed", "match": "#.*$" },
-        { "name": "comment.block.aed", "begin": "/\\*", "end": "\\*/" }
+        {
+          "name": "comment.line.double-slash.aed",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.line.number-sign.aed",
+          "match": "#.*$"
+        },
+        {
+          "name": "comment.block.aed",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
       ]
     },
     "strings": {
       "patterns": [
-        { "name": "string.quoted.double.aed", "begin": "\"", "end": "\"" },
-        { "name": "string.quoted.single.aed", "begin": "'", "end": "'" }
+        {
+          "name": "string.quoted.double.aed",
+          "begin": "\"",
+          "end": "\""
+        },
+        {
+          "name": "string.quoted.single.aed",
+          "begin": "'",
+          "end": "'"
+        }
       ]
     },
     "numbers": {
-      "patterns": [{ "name": "constant.numeric.aed", "match": "\\b[0-9]+(\\.[0-9]+)?\\b" }]
+      "patterns": [
+        {
+          "name": "constant.numeric.aed",
+          "match": "\\b[0-9]+(\\.[0-9]+)?\\b"
+        }
+      ]
     },
     "structure": {
       "patterns": [
+        {
+          "match": "(?i)\\b(ACCI[OÓ]N|FUNCI[OÓ]N|PROCEDIMIENTO)\\s+([\\p{L}_][\\p{L}\\p{N}_.]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.other.structure.aed"
+            },
+            "2": {
+              "name": "entity.name.function.aed"
+            }
+          }
+        },
         {
           "name": "keyword.other.structure.aed",
           "match": "(?i)\\b(ACCI[OÓ]N|FIN_ACCI[OÓ]N|FINACCI[OÓ]N|AMBIENTE|PROCESO|ALGORITMO|FIN_PROCESO|FUNCI[OÓ]N|FIN_FUNCI[OÓ]N|FINFUNCI[OÓ]N|PROCEDIMIENTO|FIN_PROCEDIMIENTO|FINPROCEDIMIENTO|FIN_PROC|FINPROC|REGISTRO|FIN_REGISTRO|FINREGISTRO|ES|VAR)\\b"
@@ -58,19 +110,40 @@
       "patterns": [
         {
           "name": "storage.type.aed",
-          "match": "(?i)\\b(ENTERO|REAL|CAR[AÁ]CTER|L[OÓ]GICO|ALFANUM[EÉ]RICO|ARREGLO|ARCHIVO|SECUENCIA|INDEXADO|ORDENADO|POR|DE|AN|N)\\b"
+          "match": "(?i)\\b(ENTERO|ENTEROS|REAL|REALES|CAR[AÁ]CTER|CARACTERES|L[OÓ]GICO|LOGICOS|ALFANUM[EÉ]RICO|ARREGLO|ARCHIVO|SECUENCIA|INDEXADO|ORDENADO|POR|DE)\\b"
+        },
+        {
+          "name": "storage.type.aed",
+          "match": "(?i)\\b(AN|N)(?=\\s*[\\(\\[])"
         }
       ]
     },
     "constants": {
-      "patterns": [{ "name": "constant.language.aed", "match": "(?i)\\b(VERDADERO|FALSO)\\b" }]
+      "patterns": [
+        {
+          "name": "constant.language.aed",
+          "match": "(?i)\\b(VERDADERO|FALSO)\\b"
+        }
+      ]
     },
     "operators": {
       "patterns": [
-        { "name": "keyword.operator.logical.aed", "match": "(?i)\\b(Y|O|NO|EN|MOD|DIV)\\b" },
-        { "name": "keyword.operator.assignment.aed", "match": ":=" },
-        { "name": "keyword.operator.comparison.aed", "match": "(<>|>=|<=|=|<|>)" },
-        { "name": "keyword.operator.arithmetic.aed", "match": "(\\*\\*|[-+*/])" }
+        {
+          "name": "keyword.operator.logical.aed",
+          "match": "(?i)\\b(Y|O|NO|EN|MOD|DIV)\\b"
+        },
+        {
+          "name": "keyword.operator.assignment.aed",
+          "match": ":="
+        },
+        {
+          "name": "keyword.operator.comparison.aed",
+          "match": "(<>|>=|<=|=|<|>)"
+        },
+        {
+          "name": "keyword.operator.arithmetic.aed",
+          "match": "(\\*\\*|[-+*/])"
+        }
       ]
     }
   }
