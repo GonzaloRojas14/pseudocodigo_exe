@@ -2,16 +2,32 @@
   "name": "aed-pseudocodigo",
   "displayName": "AED Pseudocódigo (UTN-FRRe)",
   "description": "Resaltado, diagnósticos y ejecución del pseudocódigo de Algoritmos y Estructuras de Datos (UTN-FRRe).",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "gonzalo",
-  "private": true,
   "license": "MIT",
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#1E202C",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Education"
   ],
+  "keywords": [
+    "pseudocodigo",
+    "pseudocódigo",
+    "aed",
+    "utn",
+    "frre",
+    "algoritmos",
+    "estructuras de datos",
+    "espanol"
+  ],
+  "qna": false,
   "main": "./dist/extension.js",
   "activationEvents": [],
   "contributes": {

@@ -10,3 +10,6 @@ build.mjs
 *.vsix
 **/*.map
 scripts/**
+PUBLICAR.md
+ejemplos/pruebas/**
+.gitignore

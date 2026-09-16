@@ -1,0 +1,11 @@
+ACCION ejemplo ES
+    AMBIENTE
+        a: LOGICO
+        b,s: ENTERO
+    PROCESO
+        a:= VERDADERO
+        MIENTRAS A = VERDADERO HACER
+            LEER(b)
+            s:=s+b
+        FIN_MIENTRAS
+FIN_ACCION

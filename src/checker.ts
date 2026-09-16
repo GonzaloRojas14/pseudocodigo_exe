@@ -53,6 +53,9 @@ class Checker {
   private global = new Scope();
   private assigned = new Set<string>();
   private used = new Set<string>();
+  /** variables asignadas alguna vez sin depender de su valor anterior */
+  private inicializados = new Set<string>();
+  private acumuladores = new Map<string, { nombre: string; pos: Pos }>();
 
   constructor(private program: Program) {}
 
@@ -78,6 +81,7 @@ class Checker {
     this.checkStatements(this.program.body, this.global);
 
     this.reportUnassigned();
+    this.reportSinInicializar();
     this.diagnostics.sort((a, b) => a.pos.offset - b.pos.offset);
     return this.diagnostics;
   }
@@ -184,6 +188,29 @@ class Checker {
     this.checkStatements(sub.body, scope);
   }
 
+  /**
+   * Un MIENTRAS cuya condición mira variables que el cuerpo nunca toca no termina
+   * jamás. Se descarta el análisis si hay llamadas a subacciones, archivos o
+   * secuencias de por medio, porque ahí el valor puede cambiar sin verse acá.
+   */
+  private avisarCicloSinSalida(stmt: Extract<Stmt, { kind: "while" }>): void {
+    const mirados = new Set<string>();
+    if (!variablesDeLaCondicion(stmt.cond, mirados) || mirados.size === 0) return;
+
+    const tocados = new Set<string>();
+    if (!variablesQueCambian(stmt.body, tocados)) return;
+
+    const sinTocar = [...mirados].filter((nombre) => !tocados.has(nombre));
+    if (sinTocar.length !== mirados.size) return;
+
+    const lista = sinTocar.map((n) => `"${n}"`).join(", ");
+    this.warn(
+      stmt.pos,
+      `Este MIENTRAS no termina nunca: la condición depende de ${lista}, y adentro del ciclo nada lo cambia. ` +
+        "Falta la instrucción que hace avanzar la condición (leer el próximo dato, incrementar el contador, apagar el flag)."
+    );
+  }
+
   private assignsOwnName(sub: SubprogramDecl): boolean {
     const target = sub.name.toLowerCase();
     let found = false;
@@ -239,6 +266,14 @@ class Checker {
         this.checkExpr(target, scope);
         this.checkExpr(stmt.value, scope);
         if (target.kind === "ident") {
+          const clave = target.name.toLowerCase();
+          if (usaVariable(stmt.value, clave)) {
+            if (!this.acumuladores.has(clave)) {
+              this.acumuladores.set(clave, { nombre: target.name, pos: stmt.pos });
+            }
+          } else {
+            this.inicializados.add(clave);
+          }
           const literal = literalDe(stmt.value);
           if (literal === undefined) conocidos.delete(target.name.toLowerCase());
           else conocidos.set(target.name.toLowerCase(), literal);
@@ -266,6 +301,8 @@ class Checker {
             `Este MIENTRAS no se ejecuta ni una vez: al llegar acá ${veredicto.detalle}. ` +
               "Revisá la condición (¿va al revés?) o el valor con el que arranca."
           );
+        } else {
+          this.avisarCicloSinSalida(stmt);
         }
         this.checkStatements(stmt.body, scope);
         conocidos.clear();
@@ -292,6 +329,7 @@ class Checker {
         }
         scope.declare({ name: stmt.counter, kind: "counter", pos: stmt.pos, type: { kind: "scalar", name: "entero", pos: stmt.pos } });
         this.assigned.add(stmt.counter.toLowerCase());
+        this.inicializados.add(stmt.counter.toLowerCase());
         this.checkExpr(stmt.from, scope);
         this.checkExpr(stmt.to, scope);
         if (stmt.step) this.checkExpr(stmt.step, scope);
@@ -307,6 +345,7 @@ class Checker {
             const root = rootName(arg);
             if (root) {
               this.assigned.add(root.toLowerCase());
+              this.inicializados.add(root.toLowerCase());
               conocidos.delete(root.toLowerCase());
             }
           }
@@ -342,6 +381,7 @@ class Checker {
             this.error(arg.pos, `El parámetro "${param.name}" es por referencia (var): hay que pasarle una variable.`);
           } else {
             this.assigned.add(root.toLowerCase());
+            this.inicializados.add(root.toLowerCase());
           }
         });
         break;
@@ -350,7 +390,10 @@ class Checker {
         for (const arg of stmt.args) this.checkExpr(arg, scope);
         for (const arg of stmt.args) {
           const root = rootName(arg);
-          if (root) this.assigned.add(root.toLowerCase());
+          if (root) {
+            this.assigned.add(root.toLowerCase());
+            this.inicializados.add(root.toLowerCase());
+          }
         }
         break;
       }
@@ -452,6 +495,17 @@ class Checker {
 
   // ── reportes finales ─────────────────────────────────────────────────────
 
+  /** variables que solo se asignan en función de sí mismas: nunca arrancan en un valor */
+  private reportSinInicializar(): void {
+    for (const [clave, info] of this.acumuladores) {
+      if (this.inicializados.has(clave)) continue;
+      this.warn(
+        info.pos,
+        `"${info.nombre}" se acumula sobre su propio valor pero nunca arranca: agregá ${info.nombre} := 0 antes del ciclo (errores-y-trampas #14).`
+      );
+    }
+  }
+
   private reportUnassigned(): void {
     const seen = new Set<string>();
     const visitScopeDecls = (decls: Declaration[]): void => {
@@ -486,6 +540,99 @@ class Checker {
   private info(pos: Pos, message: string): void {
     this.diagnostics.push(diag(pos, message, "info"));
   }
+}
+
+/** ¿la expresión usa esta variable? */
+function usaVariable(expr: Expr, clave: string): boolean {
+  switch (expr.kind) {
+    case "ident":
+      return expr.name.toLowerCase() === clave;
+    case "field":
+    case "index":
+      return usaVariable(expr.target, clave);
+    case "unary":
+      return usaVariable(expr.operand, clave);
+    case "binary":
+      return usaVariable(expr.left, clave) || usaVariable(expr.right, clave);
+    case "callExpr":
+      return expr.args.some((arg) => usaVariable(arg, clave));
+    default:
+      return false;
+  }
+}
+
+/**
+ * Junta las variables de una condición. Devuelve false si la condición depende de
+ * algo que no se puede seguir desde acá (una función, un archivo, una secuencia).
+ */
+function variablesDeLaCondicion(expr: Expr, salida: Set<string>): boolean {
+  switch (expr.kind) {
+    case "number":
+    case "string":
+    case "bool":
+      return true;
+    case "ident": {
+      const nombre = expr.name.toLowerCase();
+      if (FILE_PREDICATES.has(nombre)) return false;
+      salida.add(nombre);
+      return true;
+    }
+    case "field":
+    case "index":
+      return variablesDeLaCondicion(expr.target, salida);
+    case "unary":
+      return variablesDeLaCondicion(expr.operand, salida);
+    case "binary":
+      return (
+        variablesDeLaCondicion(expr.left, salida) && variablesDeLaCondicion(expr.right, salida)
+      );
+    default:
+      // llamadas a función, EXISTE, FDA/NFDA: el valor puede cambiar sin que se vea acá
+      return false;
+  }
+}
+
+/**
+ * Junta las variables que el cuerpo del ciclo modifica. Devuelve false si hay algo
+ * que podría modificar cualquier cosa (una llamada, un archivo, una secuencia).
+ */
+function variablesQueCambian(stmts: Stmt[], salida: Set<string>): boolean {
+  for (const stmt of stmts) {
+    switch (stmt.kind) {
+      case "assign": {
+        const root = rootName(stmt.target);
+        if (root) salida.add(root.toLowerCase());
+        break;
+      }
+      case "io": {
+        if (stmt.op === "LEER") {
+          for (const arg of stmt.args) {
+            const root = rootName(arg);
+            if (root) salida.add(root.toLowerCase());
+          }
+        }
+        break;
+      }
+      case "if":
+        if (!variablesQueCambian(stmt.then, salida)) return false;
+        if (stmt.else && !variablesQueCambian(stmt.else, salida)) return false;
+        break;
+      case "segun":
+        for (const branch of stmt.branches) {
+          if (!variablesQueCambian(branch.body, salida)) return false;
+        }
+        break;
+      case "while":
+      case "repeat":
+      case "for":
+        if (!variablesQueCambian(stmt.body, salida)) return false;
+        break;
+      default:
+        // call / file: pueden tocar variables globales sin que se note
+        return false;
+    }
+  }
+  return true;
 }
 
 /** valor literal de una expresión, si se puede saber sin ejecutar nada */

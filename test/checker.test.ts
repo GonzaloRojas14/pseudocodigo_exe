@@ -270,3 +270,104 @@ test("el PARA hacia atrás con incremento negativo no avisa nada", () => {
   `;
   assert.ok(!warnings(source).some((m) => m.includes("no se ejecuta ni una vez")));
 });
+
+test("avisa cuando nada dentro del ciclo puede cambiar la condición", () => {
+  const source = `
+    ACCION ejemplo ES
+        AMBIENTE
+            a : LOGICO
+            b, s : ENTERO
+        PROCESO
+            a := VERDADERO
+            s := 0
+            MIENTRAS a = VERDADERO HACER
+                LEER(b)
+                s := s + b
+            FIN_MIENTRAS
+    FIN_ACCION
+  `;
+  const avisos = warnings(source);
+  assert.ok(avisos.some((m) => m.includes("no termina nunca")), avisos.join(" | "));
+  assert.ok(avisos.some((m) => m.includes('"a"')));
+});
+
+test("no avisa si adentro del ciclo se apaga el flag", () => {
+  const source = `
+    ACCION con_salida ES
+        AMBIENTE
+            a : LOGICO
+            b : ENTERO
+        PROCESO
+            a := VERDADERO
+            MIENTRAS a = VERDADERO HACER
+                LEER(b)
+                SI (b = 0) ENTONCES
+                    a := FALSO
+                FIN_SI
+            FIN_MIENTRAS
+    FIN_ACCION
+  `;
+  assert.ok(!warnings(source).some((m) => m.includes("no termina nunca")), warnings(source).join(" | "));
+});
+
+test("no opina sobre ciclos de archivo o secuencia, que avanzan por afuera", () => {
+  const source = `
+    ACCION recorrido ES
+        Ambiente
+            reg = REGISTRO
+                clave : entero
+            FIN_REGISTRO
+            arch : ARCHIVO de reg
+            r : reg
+        Proceso
+            ABRIR E/(arch)
+            LEER(arch, r)
+            MIENTRAS NFDA(arch) HACER
+                LEER(arch, r)
+            FIN_MIENTRAS
+            CERRAR(arch)
+    FIN_ACCION
+  `;
+  assert.ok(!warnings(source).some((m) => m.includes("no termina nunca")), warnings(source).join(" | "));
+});
+
+test("avisa del acumulador que nunca arranca en cero", () => {
+  const source = `
+    ACCION acumular ES
+        AMBIENTE
+            s, b : ENTERO
+        PROCESO
+            PARA i := 1 HASTA 3 HACER
+                LEER(b)
+                s := s + b
+            FIN_PARA
+            ESCRIBIR(s)
+    FIN_ACCION
+  `;
+  const avisos = warnings(source);
+  assert.ok(avisos.some((m) => m.includes("nunca arranca") && m.includes("s := 0")), avisos.join(" | "));
+});
+
+test("un acumulador inicializado en otra subacción no se marca", () => {
+  const source = `
+    ACCION con_inicializar ES
+        Ambiente
+            acum : entero
+
+            PROCEDIMIENTO inicializar ES
+                Proceso
+                    acum := 0
+            FIN_PROCEDIMIENTO
+
+            PROCEDIMIENTO tratar ES
+                Proceso
+                    acum := acum + 1
+            FIN_PROCEDIMIENTO
+        Proceso
+            inicializar
+            tratar
+            ESCRIBIR(acum)
+    FIN_ACCION
+  `;
+  assert.ok(!warnings(source).some((m) => m.includes("nunca arranca")), warnings(source).join(" | "));
+});
