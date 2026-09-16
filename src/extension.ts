@@ -294,6 +294,8 @@ export class PseudocodeTerminal implements vscode.Pseudoterminal {
             resolve("");
             return;
           }
+          // se nota que el programa está esperando datos, y dónde escribirlos
+          this.writeEmitter.fire(`${DIM}\u25b8${RESET} `);
           this.pendingRead = resolve;
         }),
       isCancelled: () => this.cancelled,

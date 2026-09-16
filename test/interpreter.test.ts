@@ -357,3 +357,39 @@ test("intentar ejecutar archivos avisa que es la próxima entrega", async () => 
     /próxima entrega/
   );
 });
+
+test("los caracteres se comparan tal cual: 's' no es 'S' (por eso la rama acepta las dos)", async () => {
+  const soloMayuscula = `
+    ACCION estricto ES
+        Ambiente
+            op : caracter
+        Proceso
+            LEER(op)
+            SEGUN op HACER
+                'S' : ESCRIBIR("sigue")
+                otros : ESCRIBIR("opcion INCORRECTA")
+            FIN_SEGUN
+    FIN_ACCION
+  `;
+  assert.deepEqual(await execute(soloMayuscula, ["s"]), ["opcion INCORRECTA"]);
+  assert.deepEqual(await execute(soloMayuscula, ["S"]), ["sigue"]);
+
+  const ambas = soloMayuscula.replace("'S' :", "'S', 's' :");
+  assert.deepEqual(await execute(ambas, ["s"]), ["sigue"]);
+});
+
+test("el ejemplo demo.frre corre entero contestando en minúscula", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { join } = await import("node:path");
+  const source = readFileSync(join(__dirname, "..", "ejemplos", "demo.frre"), "utf8");
+  const salida = await execute(source, [
+    "Teclado mecanico",
+    "45000",
+    "2026 3 15",
+    "s", // antes esto repetía la pregunta para siempre
+    "n",
+  ]);
+  assert.ok(salida.includes("seguimos"), salida.join(" | "));
+  assert.ok(salida.includes("listo"), salida.join(" | "));
+  assert.equal(salida.at(-1), "listo");
+});

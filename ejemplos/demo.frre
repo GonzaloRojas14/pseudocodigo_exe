@@ -58,13 +58,16 @@ ACCION demo_nucleo ES
             ESCRIBIR("cuenta regresiva: ", i)
         FIN_PARA
 
+        // Ojo: 'S' y 's' son caracteres distintos, por eso la rama acepta los dos.
+        // Si solo pusieras 'S', escribir "s" caería siempre en otros y el ciclo
+        // no terminaría nunca.
         REPETIR
             ESCRIBIR("Desea continuar? S/N")
             LEER(op)
             SEGUN op HACER
-                'S' : ESCRIBIR("seguimos")
-                'N' : ESCRIBIR("listo")
+                'S', 's' : ESCRIBIR("seguimos")
+                'N', 'n' : ESCRIBIR("listo")
                 otros : ESCRIBIR("opcion INCORRECTA")
             FIN_SEGUN
-        HASTA QUE (op = 'N')
+        HASTA QUE (op = 'N') O (op = 'n')
 FIN_ACCION

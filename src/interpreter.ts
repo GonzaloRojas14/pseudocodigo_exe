@@ -343,6 +343,10 @@ class Interpreter {
       while (pending.length === 0) {
         const line = (await this.host.readLine()).trim();
         pending = line.length === 0 ? [] : line.split(/[\s,]+/);
+        if (pending.length === 0) {
+          if (this.host.isCancelled?.()) throw new CancelledError();
+          this.host.write("[aviso] falta el valor: escribilo y apretá Enter.");
+        }
       }
       slot.set(this.parseInput(pending.shift() as string, slot.type, arg.pos));
     }
