@@ -193,3 +193,80 @@ test("el esquema de corte de control pasa el checker sin errores", () => {
   `;
   assert.deepEqual(errors(source), []);
 });
+
+test("avisa cuando el MIENTRAS no puede entrar ni una vez (condición al revés)", () => {
+  const source = `
+    ACCION ejemplo ES
+        AMBIENTE
+            contador : ENTERO
+        PROCESO
+            contador := 0
+            MIENTRAS contador > 100 HACER
+                contador := contador + 1
+            FIN_MIENTRAS
+            ESCRIBIR(contador)
+    FIN_ACCION
+  `;
+  const avisos = warnings(source);
+  assert.ok(avisos.some((m) => m.includes("no se ejecuta ni una vez")), avisos.join(" | "));
+  assert.ok(avisos.some((m) => m.includes("contador > 100")));
+});
+
+test("no avisa cuando el ciclo sí puede entrar", () => {
+  const source = `
+    ACCION bien ES
+        AMBIENTE
+            contador : ENTERO
+        PROCESO
+            contador := 0
+            MIENTRAS contador < 100 HACER
+                contador := contador + 1
+            FIN_MIENTRAS
+    FIN_ACCION
+  `;
+  assert.ok(!warnings(source).some((m) => m.includes("no se ejecuta ni una vez")), warnings(source).join(" | "));
+});
+
+test("no se mete a adivinar si el valor viene de un LEER", () => {
+  const source = `
+    ACCION con_lectura ES
+        AMBIENTE
+            n : entero
+        PROCESO
+            n := 0
+            LEER(n)
+            MIENTRAS n > 100 HACER
+                n := n - 1
+            FIN_MIENTRAS
+    FIN_ACCION
+  `;
+  assert.ok(!warnings(source).some((m) => m.includes("no se ejecuta ni una vez")));
+});
+
+test("avisa cuando el PARA no da ninguna vuelta", () => {
+  const source = `
+    ACCION para_vacio ES
+        AMBIENTE
+        PROCESO
+            PARA i := 10 HASTA 1 HACER
+                ESCRIBIR(i)
+            FIN_PARA
+    FIN_ACCION
+  `;
+  const avisos = warnings(source);
+  assert.ok(avisos.some((m) => m.includes("PARA no se ejecuta ni una vez")), avisos.join(" | "));
+  assert.ok(avisos.some((m) => m.includes("-1")));
+});
+
+test("el PARA hacia atrás con incremento negativo no avisa nada", () => {
+  const source = `
+    ACCION para_atras ES
+        AMBIENTE
+        PROCESO
+            PARA i := 10 HASTA 1, -1 HACER
+                ESCRIBIR(i)
+            FIN_PARA
+    FIN_ACCION
+  `;
+  assert.ok(!warnings(source).some((m) => m.includes("no se ejecuta ni una vez")));
+});

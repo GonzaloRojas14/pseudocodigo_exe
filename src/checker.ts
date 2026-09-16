@@ -218,10 +218,13 @@ class Checker {
   // ── sentencias ───────────────────────────────────────────────────────────
 
   private checkStatements(stmts: Stmt[], scope: Scope): void {
-    for (const stmt of stmts) this.checkStatement(stmt, scope);
+    // valores que se conocen con certeza en esta secuencia de instrucciones:
+    // sirven para avisar de un ciclo que no arranca nunca
+    const conocidos = new Map<string, number | string | boolean>();
+    for (const stmt of stmts) this.checkStatement(stmt, scope, conocidos);
   }
 
-  private checkStatement(stmt: Stmt, scope: Scope): void {
+  private checkStatement(stmt: Stmt, scope: Scope, conocidos = new Map<string, number | string | boolean>()): void {
     switch (stmt.kind) {
       case "assign": {
         const target = stmt.target;
@@ -235,40 +238,77 @@ class Checker {
         }
         this.checkExpr(target, scope);
         this.checkExpr(stmt.value, scope);
+        if (target.kind === "ident") {
+          const literal = literalDe(stmt.value);
+          if (literal === undefined) conocidos.delete(target.name.toLowerCase());
+          else conocidos.set(target.name.toLowerCase(), literal);
+        } else if (root) {
+          conocidos.delete(root.toLowerCase());
+        }
         break;
       }
       case "if":
         this.checkExpr(stmt.cond, scope);
         this.checkStatements(stmt.then, scope);
         if (stmt.else) this.checkStatements(stmt.else, scope);
+        conocidos.clear();
         break;
       case "segun":
         this.checkExpr(stmt.subject, scope);
         for (const branch of stmt.branches) this.checkStatements(branch.body, scope);
         break;
-      case "while":
+      case "while": {
         this.checkExpr(stmt.cond, scope);
+        const veredicto = evaluarCondicion(stmt.cond, conocidos);
+        if (veredicto?.valor === false) {
+          this.warn(
+            stmt.pos,
+            `Este MIENTRAS no se ejecuta ni una vez: al llegar acá ${veredicto.detalle}. ` +
+              "Revisá la condición (¿va al revés?) o el valor con el que arranca."
+          );
+        }
         this.checkStatements(stmt.body, scope);
+        conocidos.clear();
         break;
+      }
       case "repeat":
         this.checkStatements(stmt.body, scope);
         this.checkExpr(stmt.cond, scope);
+        conocidos.clear();
         break;
-      case "for":
+      case "for": {
+        const desde = literalDe(stmt.from);
+        const hasta = literalDe(stmt.to);
+        const paso = stmt.step ? literalDe(stmt.step) : 1;
+        if (typeof desde === "number" && typeof hasta === "number" && typeof paso === "number" && paso !== 0) {
+          const daVueltas = paso > 0 ? desde <= hasta : desde >= hasta;
+          if (!daVueltas) {
+            this.warn(
+              stmt.pos,
+              `Este PARA no se ejecuta ni una vez: va de ${desde} a ${hasta} con incremento ${paso}. ` +
+                (paso > 0 ? "Para contar hacia atrás el incremento va negativo: PARA i := " + desde + " HASTA " + hasta + ", -1 HACER" : "")
+            );
+          }
+        }
         scope.declare({ name: stmt.counter, kind: "counter", pos: stmt.pos, type: { kind: "scalar", name: "entero", pos: stmt.pos } });
         this.assigned.add(stmt.counter.toLowerCase());
         this.checkExpr(stmt.from, scope);
         this.checkExpr(stmt.to, scope);
         if (stmt.step) this.checkExpr(stmt.step, scope);
         this.checkStatements(stmt.body, scope);
+        conocidos.clear();
         break;
+      }
       case "io": {
         for (const arg of stmt.args) this.checkExpr(arg, scope);
         if (stmt.op === "LEER") {
           // LEER(arch, reg) carga reg; LEER(a, b) carga a y b
           for (const arg of stmt.args) {
             const root = rootName(arg);
-            if (root) this.assigned.add(root.toLowerCase());
+            if (root) {
+              this.assigned.add(root.toLowerCase());
+              conocidos.delete(root.toLowerCase());
+            }
           }
         }
         break;
@@ -292,6 +332,7 @@ class Checker {
           );
         }
         for (const arg of stmt.args) this.checkExpr(arg, scope);
+        conocidos.clear();
         sub.params.forEach((param, idx) => {
           if (!param.byRef) return;
           const arg = stmt.args[idx];
@@ -445,6 +486,73 @@ class Checker {
   private info(pos: Pos, message: string): void {
     this.diagnostics.push(diag(pos, message, "info"));
   }
+}
+
+/** valor literal de una expresión, si se puede saber sin ejecutar nada */
+function literalDe(expr: Expr): number | string | boolean | undefined {
+  if (expr.kind === "number" || expr.kind === "string" || expr.kind === "bool") return expr.value;
+  if (expr.kind === "unary" && expr.op === "-") {
+    const interno = literalDe(expr.operand);
+    return typeof interno === "number" ? -interno : undefined;
+  }
+  return undefined;
+}
+
+/** decide una comparación simple entre una variable de valor conocido y un literal */
+function evaluarCondicion(
+  cond: Expr,
+  conocidos: Map<string, number | string | boolean>
+): { valor: boolean; detalle: string } | undefined {
+  if (cond.kind !== "binary") return undefined;
+  const comparaciones = ["=", "<>", "<", "<=", ">", ">="];
+  if (!comparaciones.includes(cond.op)) return undefined;
+
+  const izq = cond.left;
+  const der = cond.right;
+  let nombre: string | undefined;
+  let valor: number | string | boolean | undefined;
+  let limite: number | string | boolean | undefined;
+  let op = cond.op;
+
+  if (izq.kind === "ident" && conocidos.has(izq.name.toLowerCase())) {
+    nombre = izq.name;
+    valor = conocidos.get(izq.name.toLowerCase());
+    limite = literalDe(der);
+  } else if (der.kind === "ident" && conocidos.has(der.name.toLowerCase())) {
+    nombre = der.name;
+    valor = conocidos.get(der.name.toLowerCase());
+    limite = literalDe(izq);
+    op = { "<": ">", "<=": ">=", ">": "<", ">=": "<=" }[op] ?? op;
+  }
+
+  if (nombre === undefined || valor === undefined || limite === undefined) return undefined;
+  if (typeof valor !== typeof limite) return undefined;
+
+  let resultado: boolean;
+  switch (op) {
+    case "=":
+      resultado = valor === limite;
+      break;
+    case "<>":
+      resultado = valor !== limite;
+      break;
+    case "<":
+      resultado = valor < limite;
+      break;
+    case "<=":
+      resultado = valor <= limite;
+      break;
+    case ">":
+      resultado = valor > limite;
+      break;
+    default:
+      resultado = valor >= limite;
+  }
+
+  return {
+    valor: resultado,
+    detalle: `"${nombre}" vale ${JSON.stringify(valor)} y la condición pide ${nombre} ${op} ${JSON.stringify(limite)}`,
+  };
 }
 
 function rootName(expr: Expr): string | undefined {
