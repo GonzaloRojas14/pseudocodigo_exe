@@ -1,5 +1,12 @@
 # Cambios
 
+## 0.5.1
+
+- Usar un procedimiento como si devolviera un valor ahora se marca al escribir, y en ejecución ya no se ejecuta antes de avisar.
+- Nombrar una función sin sus paréntesis se explica en vez de decir que no está declarada.
+- Los límites de arreglo al revés dan un mensaje claro en lugar de un error interno.
+- Los errores de rango nombran la variable o la componente: *"notas[2]" está declarada 1..10*.
+
 ## 0.5.0
 
 - Los errores dicen dónde quedó abierto el bloque: "Falta FIN_SI: el SI que empieza en la línea 12 quedó sin cerrar", con un enlace clickeable a esa línea.

@@ -190,12 +190,28 @@ class Interpreter {
       case "numeric":
         return 0;
       case "subrange":
+        if (type.high < type.low) {
+          throw new RuntimeError(
+            `El subrango${name ? ` de "${name}"` : ""} está al revés: ${type.low}..${type.high}. ` +
+              `Va del menor al mayor: ${type.high}..${type.low}.`,
+            type.pos
+          );
+        }
         return type.low;
       case "enum":
         return type.values[0] ?? "";
       case "array": {
         let size = 1;
-        for (const dim of type.dims) size *= dim.high - dim.low + 1;
+        for (const dim of type.dims) {
+          if (dim.high < dim.low) {
+            throw new RuntimeError(
+              `Los límites del arreglo${name ? ` "${name}"` : ""} están al revés: [${dim.low}..${dim.high}]. ` +
+                `Va del menor al mayor: [${dim.high}..${dim.low}].`,
+              type.pos
+            );
+          }
+          size *= dim.high - dim.low + 1;
+        }
         const data: Value[] = new Array(size);
         for (let i = 0; i < size; i++) data[i] = this.defaultValue(type.element);
         return new ArrayVal(type.dims, data);
@@ -365,7 +381,7 @@ class Interpreter {
 
     if (wantsNumber || !type) {
       const value = Number(raw.replace(",", "."));
-      if (!Number.isNaN(value)) return this.coerce(value, type, pos);
+      if (!Number.isNaN(value)) return this.coerce(value, type, pos, destino);
       if (wantsNumber) {
         throw new RuntimeError(
           `"${destino}" es ${nombreDelTipo(type)} y se escribió "${raw}", que no es un número.`,
@@ -385,7 +401,7 @@ class Interpreter {
       );
     }
 
-    return this.coerce(raw, type, pos);
+    return this.coerce(raw, type, pos, destino);
   }
 
   // ── subacciones ──────────────────────────────────────────────────────────
@@ -409,7 +425,10 @@ class Interpreter {
         local.define(param.name, new Cell(slot.get(), param.type, slot));
       } else {
         const value = cloneValue(await this.eval(arg, callerEnv));
-        local.define(param.name, new Cell(this.coerce(value, param.type, arg.pos), param.type));
+        local.define(
+          param.name,
+          new Cell(this.coerce(value, param.type, arg.pos, param.name), param.type)
+        );
       }
     }
 
@@ -502,7 +521,18 @@ class Interpreter {
           throw new RuntimeError(FILE_PENDING, expr.pos);
         }
         const cell = env.lookup(expr.name);
-        if (!cell) throw new RuntimeError(`"${expr.name}" no está declarada en el Ambiente.`, expr.pos);
+        if (!cell) {
+          const sub = this.subprograms.get(expr.name.toLowerCase());
+          if (sub) {
+            throw new RuntimeError(
+              sub.isFunction
+                ? `"${expr.name}" es una FUNCION: se invoca con sus parámetros, ${expr.name}(...).`
+                : `"${expr.name}" es un PROCEDIMIENTO: no devuelve ningún valor, no se puede usar dentro de una expresión.`,
+              expr.pos
+            );
+          }
+          throw new RuntimeError(`"${expr.name}" no está declarada en el Ambiente.`, expr.pos);
+        }
         return cell.value;
       }
       case "field":
@@ -517,11 +547,13 @@ class Interpreter {
         }
         const sub = this.subprograms.get(key);
         if (!sub) throw new RuntimeError(`La función "${expr.callee}" no está declarada.`, expr.pos);
-        const result = await this.invoke(sub, expr.args, env, expr.pos);
         if (!sub.isFunction) {
-          throw new RuntimeError(`"${expr.callee}" es un procedimiento: no devuelve un valor.`, expr.pos);
+          throw new RuntimeError(
+            `"${expr.callee}" es un PROCEDIMIENTO: no devuelve ningún valor, no se puede usar dentro de una expresión.`,
+            expr.pos
+          );
         }
-        return result as Value;
+        return (await this.invoke(sub, expr.args, env, expr.pos)) as Value;
       }
       case "unary": {
         const value = await this.eval(expr.operand, env);
@@ -799,6 +831,13 @@ function nombreDelTipo(type: TypeNode | undefined): string {
 function describe(expr: Expr): string {
   if (expr.kind === "ident") return expr.name;
   if (expr.kind === "field") return `${describe(expr.target)}.${expr.field}`;
-  if (expr.kind === "index") return `${describe(expr.target)}[...]`;
+  if (expr.kind === "index") {
+    const indices = expr.indices
+      .map((idx) =>
+        idx.kind === "number" ? String(idx.value) : idx.kind === "ident" ? idx.name : "..."
+      )
+      .join(", ");
+    return `${describe(expr.target)}[${indices}]`;
+  }
   return "la expresión";
 }

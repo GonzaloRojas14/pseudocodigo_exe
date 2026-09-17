@@ -450,6 +450,24 @@ class Checker {
           );
           return undefined;
         }
+        // una subacción nombrada sin paréntesis no es un valor
+        if (symbol.kind === "function") {
+          const sub = this.subprograms.get(expr.name.toLowerCase());
+          if (sub?.isFunction) {
+            this.error(
+              expr.pos,
+              `"${expr.name}" es una FUNCION: para usar su resultado hay que invocarla con sus parámetros, ` +
+                `${expr.name}(${sub.params.map((p) => p.name).join(", ")}).`
+            );
+          } else if (sub) {
+            this.error(
+              expr.pos,
+              `"${expr.name}" es un PROCEDIMIENTO: no devuelve ningún valor, así que no puede usarse dentro de una expresión. ` +
+                `Se invoca solo, en su propia línea: ${expr.name}${sub.params.length ? "(...)" : ""}.`
+            );
+          }
+          return undefined;
+        }
         this.used.add(expr.name.toLowerCase());
         return symbol.type;
       }
@@ -499,6 +517,14 @@ class Checker {
         const key = expr.callee.toLowerCase();
         if (FILE_PREDICATES.has(key) || BUILTIN_FUNCTIONS.has(key)) return undefined;
         const sub = this.subprograms.get(key);
+        if (sub && !sub.isFunction) {
+          this.error(
+            expr.pos,
+            `"${expr.callee}" es un PROCEDIMIENTO: no devuelve ningún valor. ` +
+              "Si tiene que devolver algo, declaralo como FUNCION; si no, invocalo en su propia línea."
+          );
+          return undefined;
+        }
         if (!sub) {
           const parecida = masParecido(expr.callee, [
             ...[...this.subprograms.values()].map((s) => s.name),

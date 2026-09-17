@@ -425,3 +425,30 @@ test("una variable usada como procedimiento lo explica", () => {
   `;
   assert.ok(errors(source).some((m) => m.includes("es una variable, no un procedimiento")));
 });
+
+test("distingue función de procedimiento al usarlos mal", () => {
+  const source = `
+    ACCION confundir ES
+        Ambiente
+            r : entero
+
+            FUNCION doble(x : entero) : entero ES
+                Proceso
+                    doble := x * 2
+            FIN_FUNCION
+
+            PROCEDIMIENTO saludar ES
+                Proceso
+                    ESCRIBIR("hola")
+            FIN_PROCEDIMIENTO
+        Proceso
+            r := saludar + 1
+            doble(3)
+            r := doble
+    FIN_ACCION
+  `;
+  const encontrados = errors(source);
+  assert.ok(encontrados.some((m) => m.includes("es un PROCEDIMIENTO")), encontrados.join(" | "));
+  assert.ok(encontrados.some((m) => m.includes("es una FUNCION") && m.includes("doble(x)")));
+  assert.ok(warnings(source).some((m) => m.includes("no como instrucción suelta")));
+});

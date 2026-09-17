@@ -393,3 +393,98 @@ test("el ejemplo demo.frre corre entero contestando en minúscula", async () => 
   assert.ok(salida.includes("listo"), salida.join(" | "));
   assert.equal(salida.at(-1), "listo");
 });
+
+test("subrangos: valor inicial, límites y validación al leer y al pasar parámetros", async () => {
+  const salida = await execute(`
+    ACCION subrangos ES
+        Ambiente
+            mes : 1..12
+            notas : ARREGLO[1..3] de 1..10
+        Proceso
+            ESCRIBIR("mes arranca en ", mes)
+            LEER(mes)
+            notas[1] := 8
+            ESCRIBIR(mes, " ", notas[1])
+    FIN_ACCION
+  `, ["7"]);
+  assert.deepEqual(salida, ["mes arranca en 1", "7 8"]);
+
+  await assert.rejects(
+    execute(`
+      ACCION fuera ES
+          Ambiente
+              mes : 1..12
+          Proceso
+              LEER(mes)
+      FIN_ACCION
+    `, ["13"]),
+    /"mes" está declarada 1\.\.12 y se le intentó guardar 13/
+  );
+
+  await assert.rejects(
+    execute(`
+      ACCION param ES
+          Ambiente
+              PROCEDIMIENTO tratar(d : 1..31) ES
+                  Proceso
+                      ESCRIBIR(d)
+              FIN_PROCEDIMIENTO
+          Proceso
+              tratar(45)
+      FIN_ACCION
+    `),
+    /"d" está declarada 1\.\.31 y se le intentó guardar 45/
+  );
+});
+
+test("arreglos con límites que no arrancan en 1, incluso negativos", async () => {
+  const salida = await execute(`
+    ACCION limites ES
+        Ambiente
+            negativos : ARREGLO[-3..3] de entero
+            desde_cinco : ARREGLO[5..8] de entero
+            i : entero
+        Proceso
+            PARA i := -3 HASTA 3 HACER
+                negativos[i] := i * i
+            FIN_PARA
+            PARA i := 5 HASTA 8 HACER
+                desde_cinco[i] := i
+            FIN_PARA
+            ESCRIBIR(negativos[-3], " ", negativos[0], " ", desde_cinco[5], " ", desde_cinco[8])
+    FIN_ACCION
+  `);
+  assert.deepEqual(salida, ["9 0 5 8"]);
+});
+
+test("límites al revés dan un mensaje claro, no un error interno", async () => {
+  await assert.rejects(
+    execute(`
+      ACCION alreves ES
+          Ambiente
+              v : ARREGLO[10..1] de entero
+          Proceso
+              ESCRIBIR("hola")
+      FIN_ACCION
+    `),
+    /están al revés: \[10\.\.1\]\. Va del menor al mayor: \[1\.\.10\]/
+  );
+});
+
+test("un procedimiento no se puede usar como si devolviera un valor", async () => {
+  await assert.rejects(
+    execute(`
+      ACCION confundido ES
+          Ambiente
+              r : entero
+              PROCEDIMIENTO saludar ES
+                  Proceso
+                      ESCRIBIR("no deberia verse")
+              FIN_PROCEDIMIENTO
+          Proceso
+              r := saludar + 1
+      FIN_ACCION
+    `),
+    /es un PROCEDIMIENTO: no devuelve ningún valor/
+  );
+});
