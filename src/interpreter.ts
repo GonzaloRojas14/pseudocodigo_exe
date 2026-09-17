@@ -241,7 +241,7 @@ class Interpreter {
       case "assign": {
         const slot = await this.resolveSlot(stmt.target, env);
         const value = await this.eval(stmt.value, env);
-        slot.set(this.coerce(value, slot.type, stmt.pos));
+        slot.set(this.coerce(value, slot.type, stmt.pos, describe(stmt.target)));
         return;
       }
       case "if": {
@@ -337,7 +337,7 @@ class Interpreter {
       const slot = await this.resolveSlot(arg, env);
       if (this.expectsText(slot.type)) {
         const raw = pending.length > 0 ? pending.splice(0).join(" ") : (await this.host.readLine()).trim();
-        slot.set(this.parseInput(raw, slot.type, arg.pos));
+        slot.set(this.parseInput(raw, slot.type, arg.pos, describe(arg)));
         continue;
       }
       while (pending.length === 0) {
@@ -348,7 +348,7 @@ class Interpreter {
           this.host.write("[aviso] falta el valor: escribilo y apretá Enter.");
         }
       }
-      slot.set(this.parseInput(pending.shift() as string, slot.type, arg.pos));
+      slot.set(this.parseInput(pending.shift() as string, slot.type, arg.pos, describe(arg)));
     }
   }
 
@@ -357,7 +357,7 @@ class Interpreter {
     return type.kind === "text" || (type.kind === "scalar" && type.name === "alfanumerico");
   }
 
-  private parseInput(raw: string, type: TypeNode | undefined, pos: Pos): Value {
+  private parseInput(raw: string, type: TypeNode | undefined, pos: Pos, destino: string): Value {
     const wantsNumber =
       type?.kind === "numeric" ||
       type?.kind === "subrange" ||
@@ -367,7 +367,10 @@ class Interpreter {
       const value = Number(raw.replace(",", "."));
       if (!Number.isNaN(value)) return this.coerce(value, type, pos);
       if (wantsNumber) {
-        throw new RuntimeError(`Se esperaba un número y se ingresó "${raw}".`, pos);
+        throw new RuntimeError(
+          `"${destino}" es ${nombreDelTipo(type)} y se escribió "${raw}", que no es un número.`,
+          pos
+        );
       }
       return raw;
     }
@@ -376,7 +379,10 @@ class Interpreter {
       const lower = raw.toLowerCase();
       if (["verdadero", "v", "si", "sí", "true", "1"].includes(lower)) return true;
       if (["falso", "f", "no", "false", "0"].includes(lower)) return false;
-      throw new RuntimeError(`Se esperaba verdadero o falso y se ingresó "${raw}".`, pos);
+      throw new RuntimeError(
+        `"${destino}" es logico: se escribe verdadero o falso, y se ingresó "${raw}".`,
+        pos
+      );
     }
 
     return this.coerce(raw, type, pos);
@@ -542,7 +548,7 @@ class Interpreter {
 
   // ── tipos en tiempo de ejecución ─────────────────────────────────────────
 
-  private coerce(value: Value, type: TypeNode | undefined, pos: Pos): Value {
+  private coerce(value: Value, type: TypeNode | undefined, pos: Pos, destino?: string): Value {
     if (!type) return value;
     switch (type.kind) {
       case "scalar":
@@ -551,7 +557,8 @@ class Interpreter {
             if (typeof value !== "number") throw this.typeError(value, "entero", pos);
             if (!Number.isInteger(value)) {
               throw new RuntimeError(
-                `Se intentó guardar ${value} en una variable entera. Para división entera va DIV (y MOD para el resto).`,
+                `${destino ? `"${destino}" es entera y se le intentó guardar ${value}` : `Se intentó guardar ${value} en una variable entera`}. ` +
+                  "Para que la división dé un entero va DIV (y MOD para el resto): 7 DIV 2 es 3.",
                 pos
               );
             }
@@ -594,7 +601,7 @@ class Interpreter {
         if (typeof value !== "number") throw this.typeError(value, `${type.low}..${type.high}`, pos);
         if (value < type.low || value > type.high) {
           throw new RuntimeError(
-            `El valor ${value} queda fuera del subrango declarado ${type.low}..${type.high}.`,
+            `${destino ? `"${destino}" está declarada ${type.low}..${type.high}` : `El subrango es ${type.low}..${type.high}`} y se le intentó guardar ${value}.`,
             pos
           );
         }
@@ -605,7 +612,7 @@ class Interpreter {
         const match = type.values.find((v) => v.toLowerCase() === value.toLowerCase());
         if (!match) {
           throw new RuntimeError(
-            `"${value}" no es uno de los valores declarados: ${type.values.map((v) => `"${v}"`).join(", ")}.`,
+            `${destino ? `"${destino}" solo acepta` : "Los valores declarados son"} ${type.values.map((v) => `"${v}"`).join(", ")}, y se le intentó guardar "${value}".`,
             pos
           );
         }
@@ -769,6 +776,24 @@ export function formatValue(value: Value): string {
   if (value instanceof ArrayVal) return `[${value.data.map(formatValue).join(", ")}]`;
   if (value instanceof FileVal) return `<${value.kind} ${value.name}>`;
   return value;
+}
+
+function nombreDelTipo(type: TypeNode | undefined): string {
+  if (!type) return "un valor";
+  switch (type.kind) {
+    case "scalar":
+      return `de tipo ${type.name}`;
+    case "text":
+      return `de tipo AN(${type.length})`;
+    case "numeric":
+      return type.decimals > 0 ? `de tipo N(${type.digits},${type.decimals})` : `de tipo N(${type.digits})`;
+    case "subrange":
+      return `un subrango ${type.low}..${type.high}`;
+    case "enum":
+      return `uno de estos valores: ${type.values.map((v) => `"${v}"`).join(", ")}`;
+    default:
+      return "un valor";
+  }
 }
 
 function describe(expr: Expr): string {

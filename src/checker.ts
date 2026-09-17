@@ -9,6 +9,7 @@ import type {
   TypeNode,
 } from "./ast";
 import { diag, type Diagnostic } from "./diagnostics";
+import { enumerar, masParecido } from "./texto";
 
 export const BUILTIN_FUNCTIONS = new Set(["abso"]);
 /** predicados de archivo/secuencia: se chequean acá, se ejecutan en la fase 2 */
@@ -39,6 +40,12 @@ class Scope {
 
   has(name: string): boolean {
     return this.symbols.has(name.toLowerCase());
+  }
+
+  /** todo lo visible desde acá, para sugerir cuando hay un typo */
+  visibles(): string[] {
+    const nombres = [...this.symbols.values()].map((s) => s.name);
+    return this.parent ? [...nombres, ...this.parent.visibles()] : nombres;
   }
 }
 
@@ -140,7 +147,15 @@ class Checker {
     switch (type.kind) {
       case "named":
         if (!this.types.has(type.name.toLowerCase())) {
-          this.error(type.pos, `El tipo "${type.name}" no está declarado como REGISTRO en el Ambiente.`);
+          const parecido = masParecido(
+            type.name,
+            [...this.types.values()].map((r) => r.name)
+          );
+          this.error(
+            type.pos,
+            `El tipo "${type.name}" no está declarado como REGISTRO en el Ambiente.` +
+              (parecido ? ` ¿Quisiste escribir "${parecido}"?` : "")
+          );
         }
         break;
       case "array":
@@ -355,7 +370,19 @@ class Checker {
       case "call": {
         const sub = this.subprograms.get(stmt.name.toLowerCase());
         if (!sub) {
-          this.error(stmt.pos, `El procedimiento "${stmt.name}" no está declarado en el Ambiente.`);
+          const parecido = masParecido(
+            stmt.name,
+            [...this.subprograms.values()].map((s) => s.name)
+          );
+          const variable = scope.lookup(stmt.name);
+          this.error(
+            stmt.pos,
+            parecido
+              ? `El procedimiento "${stmt.name}" no está declarado. ¿Quisiste escribir "${parecido}"?`
+              : variable
+                ? `"${stmt.name}" es una variable, no un procedimiento. Para darle un valor va "${stmt.name} := ...".`
+                : `El procedimiento "${stmt.name}" no está declarado en el Ambiente de la ACCION.`
+          );
           break;
         }
         if (sub.isFunction) {
@@ -413,7 +440,14 @@ class Checker {
         if (FILE_PREDICATES.has(expr.name.toLowerCase())) return undefined;
         const symbol = scope.lookup(expr.name);
         if (!symbol) {
-          this.error(expr.pos, `"${expr.name}" no está declarada en el Ambiente.`);
+          const parecida = masParecido(expr.name, scope.visibles());
+          this.error(
+            expr.pos,
+            `"${expr.name}" no está declarada en el Ambiente.` +
+              (parecida
+                ? ` ¿Quisiste escribir "${parecida}"?`
+                : " Agregala arriba, en el Ambiente, con su tipo: " + `${expr.name} : entero`)
+          );
           return undefined;
         }
         this.used.add(expr.name.toLowerCase());
@@ -425,11 +459,13 @@ class Checker {
         if (!record) return undefined;
         const field = record.fields.find((f) => f.name.toLowerCase() === expr.field.toLowerCase());
         if (!field) {
+          const parecido = masParecido(expr.field, record.fields.map((f) => f.name));
           this.error(
             expr.pos,
-            `El registro "${record.name}" no tiene un campo "${expr.field}". Campos declarados: ${record.fields
-              .map((f) => f.name)
-              .join(", ")} (errores-y-trampas #10).`
+            `El registro "${record.name}" no tiene un campo "${expr.field}".` +
+              (parecido ? ` ¿Quisiste escribir "${parecido}"?` : "") +
+              ` Sus campos son ${enumerar(record.fields.map((f) => f.name))} (errores-y-trampas #10).`,
+            [{ pos: record.pos, message: `Acá se declara el registro "${record.name}".` }]
           );
           return undefined;
         }
@@ -464,7 +500,15 @@ class Checker {
         if (FILE_PREDICATES.has(key) || BUILTIN_FUNCTIONS.has(key)) return undefined;
         const sub = this.subprograms.get(key);
         if (!sub) {
-          this.error(expr.pos, `La función "${expr.callee}" no está declarada en el Ambiente.`);
+          const parecida = masParecido(expr.callee, [
+            ...[...this.subprograms.values()].map((s) => s.name),
+            ...BUILTIN_FUNCTIONS,
+          ]);
+          this.error(
+            expr.pos,
+            `La función "${expr.callee}" no está declarada en el Ambiente.` +
+              (parecida ? ` ¿Quisiste escribir "${parecida}"?` : "")
+          );
           return undefined;
         }
         if (expr.args.length !== sub.params.length) {
@@ -501,7 +545,7 @@ class Checker {
       if (this.inicializados.has(clave)) continue;
       this.warn(
         info.pos,
-        `"${info.nombre}" se acumula sobre su propio valor pero nunca arranca: agregá ${info.nombre} := 0 antes del ciclo (errores-y-trampas #14).`
+        `"${info.nombre}" se acumula sobre su propio valor, pero nunca se le dio un valor inicial: agregá ${info.nombre} := 0 antes de empezar a acumular (errores-y-trampas #14).`
       );
     }
   }
@@ -529,12 +573,12 @@ class Checker {
     visitScopeDecls(this.program.declarations);
   }
 
-  private error(pos: Pos, message: string): void {
-    this.diagnostics.push(diag(pos, message, "error"));
+  private error(pos: Pos, message: string, related?: Diagnostic["related"]): void {
+    this.diagnostics.push(diag(pos, message, "error", related));
   }
 
-  private warn(pos: Pos, message: string): void {
-    this.diagnostics.push(diag(pos, message, "warning"));
+  private warn(pos: Pos, message: string, related?: Diagnostic["related"]): void {
+    this.diagnostics.push(diag(pos, message, "warning", related));
   }
 
   private info(pos: Pos, message: string): void {

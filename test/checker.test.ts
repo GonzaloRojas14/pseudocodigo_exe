@@ -345,7 +345,7 @@ test("avisa del acumulador que nunca arranca en cero", () => {
     FIN_ACCION
   `;
   const avisos = warnings(source);
-  assert.ok(avisos.some((m) => m.includes("nunca arranca") && m.includes("s := 0")), avisos.join(" | "));
+  assert.ok(avisos.some((m) => m.includes("nunca se le dio un valor inicial") && m.includes("s := 0")), avisos.join(" | "));
 });
 
 test("un acumulador inicializado en otra subacción no se marca", () => {
@@ -369,5 +369,59 @@ test("un acumulador inicializado en otra subacción no se marca", () => {
             ESCRIBIR(acum)
     FIN_ACCION
   `;
-  assert.ok(!warnings(source).some((m) => m.includes("nunca arranca")), warnings(source).join(" | "));
+  assert.ok(!warnings(source).some((m) => m.includes("nunca se le dio un valor inicial")), warnings(source).join(" | "));
+});
+
+test("sugiere el nombre parecido cuando hay un typo", () => {
+  const source = `
+    ACCION typos ES
+        Ambiente
+            alumno = REGISTRO
+                nro_legajo : entero
+                cant_punt : entero
+            FIN_REGISTRO
+            a : alumno
+            centena : entero
+
+            PROCEDIMIENTO tratar_registro ES
+                Proceso
+                    centena := 0
+            FIN_PROCEDIMIENTO
+        Proceso
+            centena := 0
+            a.cant_puntos := 3
+            centera := 5
+            tratar_regsitro
+    FIN_ACCION
+  `;
+  const encontrados = errors(source);
+  assert.ok(encontrados.some((m) => m.includes('¿Quisiste escribir "cant_punt"?')), encontrados.join(" | "));
+  assert.ok(encontrados.some((m) => m.includes('¿Quisiste escribir "centena"?')));
+  assert.ok(encontrados.some((m) => m.includes('¿Quisiste escribir "tratar_registro"?')));
+});
+
+test("cuando no hay nada parecido, dice cómo declararla", () => {
+  const source = `
+    ACCION sin_parecido ES
+        Ambiente
+            a : entero
+        Proceso
+            a := xyzzy + 1
+    FIN_ACCION
+  `;
+  const encontrados = errors(source);
+  assert.ok(encontrados.some((m) => m.includes("Agregala arriba, en el Ambiente")), encontrados.join(" | "));
+});
+
+test("una variable usada como procedimiento lo explica", () => {
+  const source = `
+    ACCION confundido ES
+        Ambiente
+            contador : entero
+        Proceso
+            contador := 0
+            contador
+    FIN_ACCION
+  `;
+  assert.ok(errors(source).some((m) => m.includes("es una variable, no un procedimiento")));
 });

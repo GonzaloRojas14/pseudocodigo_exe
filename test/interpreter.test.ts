@@ -200,7 +200,7 @@ test("subrango: asignar fuera de rango corta la ejecución", async () => {
               d := 32
       FIN_ACCION
     `),
-    /fuera del subrango/
+    /está declarada 1\.\.31 y se le intentó guardar 32/
   );
 });
 
@@ -214,7 +214,7 @@ test("enumerado: solo acepta los valores declarados", async () => {
               carrera := 'LAR'
       FIN_ACCION
     `),
-    /no es uno de los valores declarados/
+    /solo acepta "ISI", "IEM", "IQ"/
   );
 });
 

@@ -131,7 +131,10 @@ describe("Un archivo suelto, sin carpeta abierta", () => {
     const salida = capturar(pty);
     pty.open();
     await esperarA("que termine", () => pty.finalizado);
-    assert.match(salida(), /Error de ejecución \(línea 5\): El valor 45 queda fuera del subrango/);
+    assert.match(
+      salida(),
+      /Error de ejecución \(línea 5\): "d" está declarada 1\.\.31 y se le intentó guardar 45\./
+    );
   });
 
   after(() => {

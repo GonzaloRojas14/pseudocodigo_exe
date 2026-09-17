@@ -1,5 +1,14 @@
 # Cambios
 
+## 0.5.0
+
+- Los errores dicen dónde quedó abierto el bloque: "Falta FIN_SI: el SI que empieza en la línea 12 quedó sin cerrar", con un enlace clickeable a esa línea.
+- Distingue un cierre que falta de un cierre que sobra.
+- Sugiere el nombre parecido cuando hay un typo, en variables, campos, procedimientos, funciones, tipos y palabras clave: *¿Quisiste escribir "centena"?*
+- Los errores de ejecución nombran la variable: *"cantidad" es entera y se le intentó guardar 3.5*.
+- Los mensajes vagos ahora enumeran qué sí es válido en ese lugar.
+- Un error de cierre que es consecuencia de otro error anterior ya no se muestra: se arregla el primero y listo.
+
 ## 0.4.0
 
 - Avisa cuando un `MIENTRAS` no termina nunca porque nada dentro del ciclo puede cambiar su condición.

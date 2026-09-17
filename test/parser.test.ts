@@ -291,3 +291,44 @@ test("y ese código pegado además se ejecuta", async () => {
   const output = await execute(source);
   assert.deepEqual(output, ["resultado: 7"]);
 });
+
+test("un bloque sin cerrar dice en qué línea quedó abierto", () => {
+  const source = [
+    "ACCION sin_cerrar ES",
+    "    Ambiente",
+    "        a : entero",
+    "    Proceso",
+    "        a := 1",
+    "        SI a = 1 ENTONCES",
+    '            ESCRIBIR("uno")',
+    "FIN_ACCION",
+  ].join("\n");
+  const parsed = parse(source);
+  const error = parsed.diagnostics.find((d) => d.severity === "error");
+  assert.match(error?.message ?? "", /Falta FIN_SI: el SI que empieza en la línea 6/);
+  assert.equal(error?.related?.[0].pos.line, 6);
+});
+
+test("un cierre de más se explica como cierre de más", () => {
+  const source = `
+    ACCION sobra ES
+        Ambiente
+        Proceso
+            ESCRIBIR("hola")
+            FIN_MIENTRAS
+    FIN_ACCION
+  `;
+  assert.ok(errors(source).some((m) => m.includes("no hay ningún MIENTRAS abierto")), errors(source).join(" | "));
+});
+
+test("un tipo inválido enumera los tipos que sí valen", () => {
+  const source = `
+    ACCION tipo_raro ES
+        Ambiente
+            a : 
+        Proceso
+            ESCRIBIR("hola")
+    FIN_ACCION
+  `;
+  assert.ok(errors(source).some((m) => m.includes("Los tipos son") && m.includes("AN(n)")), errors(source).join(" | "));
+});

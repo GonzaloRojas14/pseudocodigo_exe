@@ -26,7 +26,10 @@ export function activate(context: vscode.ExtensionContext): AedApi {
       key,
       setTimeout(() => {
         timers.delete(key);
-        diagnostics.set(document.uri, analyze(document.getText()).diagnostics.map(toVsDiagnostic));
+        diagnostics.set(
+          document.uri,
+          analyze(document.getText()).diagnostics.map((d) => toVsDiagnostic(d, document.uri))
+        );
       }, delay)
     );
   };
@@ -118,7 +121,7 @@ function analyze(source: string): { program?: Program; diagnostics: Diagnostic[]
   };
 }
 
-function toVsDiagnostic(item: Diagnostic): vscode.Diagnostic {
+function toVsDiagnostic(item: Diagnostic, uri?: vscode.Uri): vscode.Diagnostic {
   const line = Math.max(0, item.pos.line - 1);
   const col = Math.max(0, item.pos.col - 1);
   const range = new vscode.Range(line, col, line, col + Math.max(1, item.pos.length));
@@ -130,6 +133,16 @@ function toVsDiagnostic(item: Diagnostic): vscode.Diagnostic {
         : vscode.DiagnosticSeverity.Information;
   const diagnostic = new vscode.Diagnostic(range, item.message, severity);
   diagnostic.source = "AED";
+  if (uri && item.related?.length) {
+    diagnostic.relatedInformation = item.related.map((extra) => {
+      const linea = Math.max(0, extra.pos.line - 1);
+      const columna = Math.max(0, extra.pos.col - 1);
+      return new vscode.DiagnosticRelatedInformation(
+        new vscode.Location(uri, new vscode.Range(linea, columna, linea, columna + Math.max(1, extra.pos.length))),
+        extra.message
+      );
+    });
+  }
   return diagnostic;
 }
 
@@ -152,7 +165,7 @@ async function runDocument(
   // se ejecuta el texto que está en pantalla: no hace falta guardar ni tener carpeta abierta
 
   const { program, diagnostics } = analyze(document.getText());
-  collection.set(document.uri, diagnostics.map(toVsDiagnostic));
+  collection.set(document.uri, diagnostics.map((d) => toVsDiagnostic(d, document.uri)));
 
   const errors = diagnostics.filter((d) => d.severity === "error");
   if (!program || errors.length > 0) {

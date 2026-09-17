@@ -14,31 +14,21 @@ import type {
 } from "./ast";
 import { tokenize, type Token } from "./lexer";
 import { diag, type Diagnostic } from "./diagnostics";
+import { enumerar, masParecido } from "./texto";
 
 class ParseError extends Error {}
 
-/** sugiere la palabra clave más parecida cuando hay un typo evidente */
-function closestKeyword(word: string, candidates: string[]): string | undefined {
-  const target = word.toUpperCase();
-  let best: { word: string; distance: number } | undefined;
-  for (const candidate of candidates) {
-    const distance = editDistance(target, candidate);
-    if (!best || distance < best.distance) best = { word: candidate, distance };
-  }
-  return best && best.distance <= Math.max(2, Math.floor(target.length / 3)) ? best.word : undefined;
-}
-
-function editDistance(a: string, b: string): number {
-  const rows = Array.from({ length: a.length + 1 }, (_, i) => [i, ...new Array(b.length).fill(0)]);
-  for (let j = 0; j <= b.length; j++) rows[0][j] = j;
-  for (let i = 1; i <= a.length; i++) {
-    for (let j = 1; j <= b.length; j++) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      rows[i][j] = Math.min(rows[i - 1][j] + 1, rows[i][j - 1] + 1, rows[i - 1][j - 1] + cost);
-    }
-  }
-  return rows[a.length][b.length];
-}
+/** cómo se llama y cómo se cierra cada bloque, para los mensajes */
+const BLOQUES: Record<string, { nombre: string; cierre: string }> = {
+  SI: { nombre: "SI", cierre: "FIN_SI" },
+  MIENTRAS: { nombre: "MIENTRAS", cierre: "FIN_MIENTRAS" },
+  PARA: { nombre: "PARA", cierre: "FIN_PARA" },
+  SEGUN: { nombre: "SEGUN", cierre: "FIN_SEGUN" },
+  REGISTRO: { nombre: "REGISTRO", cierre: "FIN_REGISTRO" },
+  FUNCION: { nombre: "FUNCION", cierre: "FIN_FUNCION" },
+  PROCEDIMIENTO: { nombre: "PROCEDIMIENTO", cierre: "FIN_PROCEDIMIENTO" },
+  ACCION: { nombre: "ACCION", cierre: "FIN_ACCION" },
+};
 
 const DECL_STOP = new Set([
   "PROCESO",
@@ -105,6 +95,8 @@ class Parser {
   private index = 0;
   /** registros declarados dentro de otro registro: se suben al Ambiente que los contiene */
   private hoistedTypes: RecordDecl[] = [];
+  /** bloques abiertos, para distinguir "falta un cierre" de "sobra un cierre" */
+  private abiertos: Token[] = [];
 
   constructor(private tokens: Token[]) {}
 
@@ -148,7 +140,69 @@ class Parser {
 
   private expect(type: string, what: string): Token {
     if (this.check(type)) return this.next();
-    return this.error(`Se esperaba ${what} y apareció "${this.current.raw || this.current.type}".`);
+    const encontrado = this.current.raw || this.current.type;
+    // typo en una palabra clave: HACAER por HACER, ENTONSES por ENTONCES...
+    const esPalabraClave = /^[A-ZÁÉÍÓÚ_-]+$/.test(type);
+    const sugerencia =
+      esPalabraClave && this.current.type === "IDENT" && masParecido(this.current.value, [type])
+        ? ` ¿Quisiste escribir ${type}?`
+        : "";
+    return this.error(`Se esperaba ${what} y apareció "${encontrado}".${sugerencia}`);
+  }
+
+  /**
+   * Cierra un bloque. Si el cierre no está, el error apunta a dónde quedó abierto,
+   * que es lo que uno necesita saber para arreglarlo.
+   */
+  private abrirBloque(apertura: Token): Token {
+    this.abiertos.push(apertura);
+    return apertura;
+  }
+
+  private expectCloser(apertura: Token): void {
+    const bloque = BLOQUES[apertura.type];
+    const indice = this.abiertos.lastIndexOf(apertura);
+    if (indice >= 0) this.abiertos.splice(indice, 1);
+
+    if (this.check(bloque.cierre)) {
+      this.next();
+      return;
+    }
+
+    // un cierre que falta suele ser consecuencia de un error anterior: con arreglar
+    // el primero se acomoda todo, así que no se llena el panel de errores derivados
+    if (this.diagnostics.some((d) => d.severity === "error")) {
+      throw new ParseError(`Falta ${bloque.cierre}`);
+    }
+
+    const encontrado = this.current.raw || this.current.type;
+    const esOtroCierre = Object.values(BLOQUES).some((b) => b.cierre === this.current.type);
+    const loEsperaOtroBloque = this.abiertos.some((t) => BLOQUES[t.type].cierre === this.current.type);
+
+    if (esOtroCierre && !loEsperaOtroBloque) {
+      const duenio = Object.values(BLOQUES).find((b) => b.cierre === this.current.type)?.nombre;
+      this.diagnostics.push(
+        diag(
+          this.current.pos,
+          `Sobra este ${encontrado}: no hay ningún ${duenio} abierto para cerrar acá. ` +
+            `Lo que sí falta cerrar es el ${bloque.nombre} de la línea ${apertura.pos.line}, con ${bloque.cierre}.`,
+          "error",
+          [{ pos: apertura.pos, message: `Este ${bloque.nombre} sigue abierto.` }]
+        )
+      );
+      throw new ParseError("cierre de más");
+    }
+
+    this.diagnostics.push(
+      diag(
+        this.current.pos,
+        `Falta ${bloque.cierre}: el ${bloque.nombre} que empieza en la línea ${apertura.pos.line} quedó sin cerrar` +
+          (this.check("EOF") ? " y el archivo se terminó." : `, y acá apareció "${encontrado}".`),
+        "error",
+        [{ pos: apertura.pos, message: `Este ${bloque.nombre} es el que falta cerrar.` }]
+      )
+    );
+    throw new ParseError(`Falta ${bloque.cierre}`);
   }
 
   /** ; y . sueltos: separadores opcionales de las plantillas viejas */
@@ -192,7 +246,7 @@ class Parser {
 
   parseProgram(): Program {
     this.skipTerminators();
-    const accion = this.expect("ACCION", "ACCION al inicio del algoritmo");
+    const accion = this.abrirBloque(this.expect("ACCION", "ACCION al inicio del algoritmo"));
     const { name, pos: namePos } = this.identName("el nombre de la acción");
 
     // en algunos apuntes la ACCION se plantea con parámetros, como si fuera una subacción
@@ -236,7 +290,7 @@ class Parser {
     const body = this.parseStatements();
 
     if (this.check("FIN_PROCESO")) this.next();
-    this.expect("FIN_ACCION", "FIN_ACCION para cerrar la acción");
+    this.expectCloser(accion);
 
     const notations = new Set<string>();
     for (const tok of this.tokens) if (tok.notation) notations.add(tok.notation);
@@ -309,8 +363,9 @@ class Parser {
     if (names.length === 1 && this.accept("=")) {
       if (this.check("REGISTRO")) {
         this.next();
+        const apertura = this.peek(-1);
         const fields = this.parseFields();
-        this.expect("FIN_REGISTRO", "FIN_REGISTRO para cerrar el registro");
+        this.expectCloser({ ...apertura, type: "REGISTRO" });
         return { kind: "record", pos: first.pos, name: first.name, fields };
       }
       const value = this.parseExpression();
@@ -525,7 +580,7 @@ class Parser {
       }
       // "arch : ARHCIVO DE alumnos": un tipo desconocido seguido de "de" es una palabra clave mal escrita
       if (this.peek(1).type === "DE") {
-        const suggestion = closestKeyword(tok.value, ["ARCHIVO", "SECUENCIA", "ARREGLO"]);
+        const suggestion = masParecido(tok.value, ["ARCHIVO", "SECUENCIA", "ARREGLO"]);
         this.error(
           `"${tok.value}" no es un tipo${suggestion ? `. ¿Quisiste escribir ${suggestion}?` : "."}`
         );
@@ -534,7 +589,11 @@ class Parser {
       return { kind: "named", pos: tok.pos, name: tok.value };
     }
 
-    return this.error(`Se esperaba un tipo y apareció "${tok.raw || tok.type}".`);
+    return this.error(
+      `Se esperaba un tipo y apareció "${tok.raw || tok.type}". Los tipos son ` +
+        `${enumerar(["entero", "real", "caracter", "logico", "AN(n)", "N(n)", "un subrango como 1..31", "un enumerado como ('A','B')", "ARREGLO", "ARCHIVO", "SECUENCIA"], "o")}, ` +
+        "o el nombre de un REGISTRO declarado antes."
+    );
   }
 
   private parseBound(): number {
@@ -560,10 +619,12 @@ class Parser {
     this.skipStatementSeparators();
     while (!STMT_STOP.has(this.current.type) && !this.isSegunLabelAhead()) {
       const before = this.index;
+      const bloquesAbiertos = this.abiertos.length;
       try {
         stmts.push(this.parseStatement());
       } catch (err) {
         if (!(err instanceof ParseError)) throw err;
+        this.abiertos.length = Math.min(this.abiertos.length, bloquesAbiertos);
         this.recoverStatement();
         if (this.index === before) this.next();
         if (this.check("EOF")) break;
@@ -610,13 +671,31 @@ class Parser {
         return this.parseFileStmt();
       case "IDENT":
         return this.parseAssignOrCall();
-      default:
-        return this.error(`No se esperaba "${tok.raw || tok.type}" al principio de una instrucción.`);
+      default: {
+        const cierres: Record<string, string> = {
+          FIN_SI: "SI",
+          FIN_MIENTRAS: "MIENTRAS",
+          FIN_PARA: "PARA",
+          FIN_SEGUN: "SEGUN",
+          FIN_ACCION: "ACCION",
+        };
+        const sobra = cierres[tok.type];
+        if (sobra) {
+          return this.error(
+            `Sobra este ${tok.raw}: no hay ningún ${sobra} abierto para cerrar acá.`
+          );
+        }
+        return this.error(
+          `No se esperaba "${tok.raw || tok.type}" acá. Una instrucción arranca con el nombre de una ` +
+            `variable (para asignarle algo con :=), con el nombre de un procedimiento, o con ` +
+            `${enumerar(["SI", "SEGUN", "MIENTRAS", "REPETIR", "PARA", "ESCRIBIR", "LEER"], "o")}.`
+        );
+      }
     }
   }
 
   private parseIf(): Stmt {
-    const start = this.next();
+    const start = this.abrirBloque(this.next());
     const cond = this.parseExpression();
     if (!this.accept("ENTONCES")) {
       this.error('Falta "ENTONCES" después de la condición del SI.');
@@ -635,12 +714,12 @@ class Parser {
       }
       elseBody = this.parseStatements();
     }
-    this.expect("FIN_SI", "FIN_SI para cerrar el SI");
+    this.expectCloser(start);
     return { kind: "if", pos: start.pos, cond, then, else: elseBody };
   }
 
   private parseSegun(): Stmt {
-    const start = this.next();
+    const start = this.abrirBloque(this.next());
     const subject = this.parseExpression();
     this.expect("HACER", '"HACER" después de la expresión del SEGUN');
     this.skipStrayColon("SEGUN ... HACER");
@@ -661,16 +740,16 @@ class Parser {
       const body = this.parseStatements();
       branches.push({ pos: branchStart.pos, labels, body });
     }
-    this.expect("FIN_SEGUN", "FIN_SEGUN para cerrar el SEGUN");
+    this.expectCloser(start);
     return { kind: "segun", pos: start.pos, subject, branches };
   }
 
   private parseWhile(): Stmt {
-    const start = this.next();
+    const start = this.abrirBloque(this.next());
     const cond = this.parseExpression();
     this.expect("HACER", '"HACER" después de la condición del MIENTRAS');
     const body = this.parseStatements();
-    this.expect("FIN_MIENTRAS", "FIN_MIENTRAS para cerrar el ciclo");
+    this.expectCloser(start);
     return { kind: "while", pos: start.pos, cond, body };
   }
 
@@ -684,7 +763,7 @@ class Parser {
   }
 
   private parseFor(): Stmt {
-    const start = this.next();
+    const start = this.abrirBloque(this.next());
     const counter = this.identName("la variable contador del PARA").name;
     if (!this.accept(":=")) {
       if (this.accept("=")) {
@@ -708,7 +787,7 @@ class Parser {
     if (this.accept(",")) step = this.parseExpression();
     this.expect("HACER", '"HACER" antes del cuerpo del PARA');
     const body = this.parseStatements();
-    this.expect("FIN_PARA", "FIN_PARA para cerrar el ciclo");
+    this.expectCloser(start);
     return { kind: "for", pos: start.pos, counter, from, to, step, body };
   }
 
@@ -928,7 +1007,10 @@ class Parser {
         return inner;
       }
       default:
-        return this.error(`Se esperaba un valor o una variable y apareció "${tok.raw || tok.type}".`);
+        return this.error(
+          `Se esperaba un valor y apareció "${tok.raw || tok.type}". Un valor es un número, un texto ` +
+            'entre comillas, verdadero/falso, una variable, o una cuenta entre ellos.'
+        );
     }
   }
 }
