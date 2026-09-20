@@ -1,0 +1,80 @@
+// ABM sobre un archivo INDEXADO, siguiendo la plantilla de la cátedra.
+// El maestro se guarda en abm_indexado.datos/arch_mae.tsv y PERSISTE entre
+// corridas: lo que das de alta hoy sigue estando mañana.
+//
+// Secuencia obligatoria de toda operación indexada:
+//   asignar la clave  ->  LEER  ->  SI EXISTE  ->  operar
+// El alta es ESCRIBIR; la modificación, RE-ESCRIBIR; la baja lógica marca el campo.
+
+ACCION act_indexada ES
+    Ambiente
+        mae = REGISTRO
+            clave  : entero
+            campo1 : AN(50)
+            campo4 : real
+            Baja   : caracter
+        FIN_REGISTRO
+
+        reg_mae : mae
+        arch_mae : ARCHIVO de mae INDEXADO por clave
+
+        campo1 : AN(50)
+        campo4 : real
+        op, acc : caracter
+
+        PROCEDIMIENTO alta ES
+            Proceso
+                ESCRIBIR("Ingrese clave")
+                LEER(reg_mae.clave)
+                LEER(arch_mae, reg_mae)
+                SI EXISTE ENTONCES
+                    ESCRIBIR("ERROR, EL REGISTRO YA EXISTE")
+                SINO
+                    ESCRIBIR("Ingrese campo1: "); LEER(reg_mae.campo1)
+                    ESCRIBIR("Ingrese campo4: "); LEER(reg_mae.campo4)
+                    reg_mae.Baja := '-'
+                    ESCRIBIR(arch_mae, reg_mae)
+                FIN_SI
+        FIN_PROCEDIMIENTO
+
+        PROCEDIMIENTO modif_baja(TipoMov : caracter) ES
+            Proceso
+                ESCRIBIR("Ingrese clave")
+                LEER(reg_mae.clave)
+                LEER(arch_mae, reg_mae)
+                SI EXISTE ENTONCES
+                    SI (TipoMov = 'B') ENTONCES
+                        reg_mae.Baja := '*'
+                    SINO
+                        ESCRIBIR("Ingrese campo1: "); LEER(campo1)
+                        SI (campo1 <> "") ENTONCES
+                            reg_mae.campo1 := campo1
+                        FIN_SI
+                        ESCRIBIR("Ingrese campo4: "); LEER(campo4)
+                        SI (campo4 <> 0) ENTONCES
+                            reg_mae.campo4 := campo4
+                        FIN_SI
+                    FIN_SI
+                    RE-ESCRIBIR(arch_mae, reg_mae)
+                SINO
+                    ESCRIBIR("ERROR, EL REGISTRO NO EXISTE")
+                FIN_SI
+        FIN_PROCEDIMIENTO
+
+    Proceso
+        ABRIR E/S(arch_mae)
+
+        ESCRIBIR("Desea continuar? S/N"); LEER(op)
+
+        MIENTRAS (op = 'S') HACER
+            ESCRIBIR("Ingrese accion A/B/M"); LEER(acc)
+            SEGUN acc HACER
+                'A'      : alta
+                'B', 'M' : modif_baja(acc)
+                otros    : ESCRIBIR("Accion INCORRECTA")
+            FIN_SEGUN
+            ESCRIBIR("Desea continuar? S/N"); LEER(op)
+        FIN_MIENTRAS
+
+        CERRAR(arch_mae)
+FIN_ACCION

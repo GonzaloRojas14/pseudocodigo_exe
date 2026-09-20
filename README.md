@@ -59,9 +59,11 @@ No hay que escribirlos a mano desde cero: el comando **"AED: Generar plantilla d
 
 ## Qué entra y qué todavía no
 
-**Anda:** `ACCION/Ambiente/Proceso`, todos los tipos (`entero`, `real`, `caracter`, `logico`, `AN(n)`, `N(n)`, `N(e,d)`, subrangos, enumerados), registros anidados, arreglos y matrices, `SI`/`SEGUN`/`MIENTRAS`/`REPETIR`/`PARA` con incremento, funciones y procedimientos con paso por valor y por referencia, `ESCRIBIR`/`LEER` por pantalla y teclado, y **archivos secuenciales y secuencias** — con eso corren corte de control, mezcla y actualización.
+**Anda todo el lenguaje hasta archivos**: `ACCION/Ambiente/Proceso`, todos los tipos (`entero`, `real`, `caracter`, `logico`, `AN(n)`, `N(n)`, `N(e,d)`, subrangos, enumerados), registros anidados, arreglos y matrices, `SI`/`SEGUN`/`MIENTRAS`/`REPETIR`/`PARA`, funciones y procedimientos con paso por valor y por `var`, `ESCRIBIR`/`LEER` por pantalla y teclado, **archivos secuenciales**, **secuencias** y **archivos indexados**. Con eso corren los ejercicios de corte de control, mezcla, actualización unitaria y por lotes, y los ABM indexados.
 
-**Todavía no se ejecuta:** los archivos indexados (`SI EXISTE`, `RE-ESCRIBIR`, `ELIMINAR`) y las listas con punteros. Se escriben, se resaltan y se chequean, pero al ejecutarlos la terminal avisa que llegan en una próxima versión.
+Un archivo `INDEXADO por clave` se accede por clave, no se recorre: se carga la clave en el registro, se hace `LEER`, se pregunta `SI EXISTE` y recién ahí se opera (`ESCRIBIR` da de alta, `RE-ESCRIBIR` modifica, `ELIMINAR` da de baja física). Los cambios quedan guardados entre corridas, así que un ABM se comporta como un maestro de verdad.
+
+**Todavía no se ejecuta:** las listas con punteros (`Puntero a`, `nil`, `NUEVO`), de la unidad 4.
 
 ## Licencia
 

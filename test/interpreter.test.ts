@@ -793,3 +793,287 @@ test("leer de un archivo abierto solo para escritura se explica", async () => {
     /se abrió solo para escritura \(ABRIR \/S\): no se puede leer/
   );
 });
+
+// ── Fase 3: archivos indexados ─────────────────────────────────────────────
+
+const DECLARA_MAE = `
+            mae = REGISTRO
+                clave  : entero
+                campo1 : AN(50)
+                campo4 : real
+                Baja   : caracter
+            FIN_REGISTRO
+            arch : ARCHIVO de mae INDEXADO por clave
+            r : mae
+`;
+
+test("indexado: alta, alta repetida, modificación y baja lógica, con persistencia", async () => {
+  const archivos: Record<string, string> = {};
+
+  const salida = await execute(
+    `
+    ACCION abm ES
+        Ambiente
+${DECLARA_MAE}
+        Proceso
+            ABRIR E/S(arch)
+
+            r.clave := 10
+            LEER(arch, r)
+            SI EXISTE ENTONCES
+                ESCRIBIR("ya existe")
+            SINO
+                r.campo1 := "Teclado"
+                r.campo4 := 1000
+                r.Baja := '-'
+                ESCRIBIR(arch, r)
+                ESCRIBIR("alta 10 ok")
+            FIN_SI
+
+            r.clave := 10
+            LEER(arch, r)
+            SI EXISTE ENTONCES
+                ESCRIBIR("ERROR, EL REGISTRO YA EXISTE")
+            FIN_SI
+
+            r.clave := 10
+            LEER(arch, r)
+            SI EXISTE ENTONCES
+                r.campo4 := 1500
+                RE-ESCRIBIR(arch, r)
+                ESCRIBIR("modificado")
+            FIN_SI
+
+            r.clave := 99
+            LEER(arch, r)
+            SI EXISTE ENTONCES
+                ESCRIBIR("no deberia")
+            SINO
+                ESCRIBIR("ERROR, EL REGISTRO NO EXISTE")
+            FIN_SI
+
+            CERRAR(arch)
+    FIN_ACCION
+  `,
+    [],
+    archivos
+  );
+
+  assert.deepEqual(salida, ["alta 10 ok", "ERROR, EL REGISTRO YA EXISTE", "modificado", "ERROR, EL REGISTRO NO EXISTE"]);
+  assert.match(archivos["arch.tsv"], /10\tTeclado\t1500\t-/);
+
+  // segunda corrida sobre el mismo archivo: los datos siguen ahí
+  const seguimiento = await execute(
+    `
+    ACCION consulta ES
+        Ambiente
+${DECLARA_MAE}
+        Proceso
+            ABRIR E/S(arch)
+            r.clave := 10
+            LEER(arch, r)
+            SI EXISTE ENTONCES
+                ESCRIBIR(r.campo1, " ", r.campo4)
+            FIN_SI
+            ELIMINAR(arch, r)
+            CERRAR(arch)
+    FIN_ACCION
+  `,
+    [],
+    archivos
+  );
+  assert.deepEqual(seguimiento, ["Teclado 1500"]);
+  assert.ok(!archivos["arch.tsv"].includes("Teclado"), archivos["arch.tsv"]);
+});
+
+test("indexado: las trampas documentadas se explican", async () => {
+  const conArchivo = { "arch.tsv": "clave\tcampo1\tcampo4\tBaja\n1\tuno\t10\t-\n" };
+
+  await assert.rejects(
+    execute(
+      `
+      ACCION sin_leer ES
+          Ambiente
+${DECLARA_MAE}
+          Proceso
+              ABRIR E/S(arch)
+              r.clave := 1
+              RE-ESCRIBIR(arch, r)
+      FIN_ACCION
+    `,
+      [],
+      { ...conArchivo }
+    ),
+    /RE-ESCRIBIR sin un LEER que haya encontrado el registro/
+  );
+
+  await assert.rejects(
+    execute(
+      `
+      ACCION recorrer ES
+          Ambiente
+${DECLARA_MAE}
+          Proceso
+              ABRIR E/S(arch)
+              LEER(arch, r)
+              MIENTRAS NFDA(arch) HACER
+                  LEER(arch, r)
+              FIN_MIENTRAS
+      FIN_ACCION
+    `,
+      [],
+      { ...conArchivo }
+    ),
+    /es un archivo INDEXADO: no se recorre con NFDA/
+  );
+
+  await assert.rejects(
+    execute(
+      `
+      ACCION existe_temprano ES
+          Ambiente
+${DECLARA_MAE}
+          Proceso
+              ABRIR E/S(arch)
+              SI EXISTE ENTONCES
+                  ESCRIBIR("ups")
+              FIN_SI
+      FIN_ACCION
+    `,
+      [],
+      { ...conArchivo }
+    ),
+    /todavía no se leyó ninguno/
+  );
+
+  await assert.rejects(
+    execute(
+      `
+      ACCION alta_repetida ES
+          Ambiente
+${DECLARA_MAE}
+          Proceso
+              ABRIR E/S(arch)
+              r.clave := 1
+              r.campo1 := "otro"
+              ESCRIBIR(arch, r)
+      FIN_ACCION
+    `,
+      [],
+      { ...conArchivo }
+    ),
+    /un alta pide que la clave NO exista/
+  );
+});
+
+test("actualización por lotes: varios movimientos por clave se graban una sola vez", async () => {
+  const archivos: Record<string, string> = {
+    "mae.tsv": "clave\tcampo1\tcampo4\tBaja\n10\tTeclado\t1000\t-\n20\tMouse\t500\t-\n40\tMonitor\t9000\t-\n",
+    "mov.tsv":
+      "clave\tcampo1\tcampo4\tTipoMov\n10\t\t1500\tM\n10\tTeclado RGB\t0\tM\n30\tParlante\t2500\tA\n30\t\t2600\tM\n40\t\t0\tB\n50\t\t0\tB\n",
+  };
+
+  const salida = await execute(
+    `
+    ACCION act_lote ES
+        Ambiente
+            HV = 99999999
+            mae = REGISTRO
+                clave  : entero
+                campo1 : AN(50)
+                campo4 : real
+                Baja   : caracter
+            FIN_REGISTRO
+            mov = REGISTRO
+                clave   : entero
+                campo1  : AN(50)
+                campo4  : real
+                TipoMov : ('A','B','M')
+            FIN_REGISTRO
+            reg_mae, aux_mae : mae
+            mae_act : ARCHIVO de mae
+            mae : ARCHIVO de mae
+            reg_mov : mov
+            mov : ARCHIVO de mov
+
+            PROCEDIMIENTO leer_mae ES
+                Proceso
+                    LEER(mae, reg_mae)
+                    SI FDA(mae) ENTONCES
+                        reg_mae.clave := HV
+                    FIN_SI
+            FIN_PROCEDIMIENTO
+
+            PROCEDIMIENTO leer_mov ES
+                Proceso
+                    LEER(mov, reg_mov)
+                    SI FDA(mov) ENTONCES
+                        reg_mov.clave := HV
+                    FIN_SI
+            FIN_PROCEDIMIENTO
+
+            PROCEDIMIENTO iguales ES
+                Proceso
+                    SI (reg_mov.TipoMov = 'B') ENTONCES
+                        aux_mae.Baja := '*'
+                    SINO
+                        SI (reg_mov.campo1 <> "") ENTONCES
+                            aux_mae.campo1 := reg_mov.campo1
+                        FIN_SI
+                        SI (reg_mov.campo4 <> 0) ENTONCES
+                            aux_mae.campo4 := reg_mov.campo4
+                        FIN_SI
+                    FIN_SI
+            FIN_PROCEDIMIENTO
+
+            PROCEDIMIENTO lote ES
+                Proceso
+                    MIENTRAS (aux_mae.clave = reg_mov.clave) HACER
+                        iguales
+                        leer_mov
+                    FIN_MIENTRAS
+                    ESCRIBIR(mae_act, aux_mae)
+            FIN_PROCEDIMIENTO
+        Proceso
+            ABRIR E/(mae); ABRIR E/(mov); ABRIR /S(mae_act)
+            leer_mae; leer_mov
+            MIENTRAS (reg_mae.clave <> HV) O (reg_mov.clave <> HV) HACER
+                SI (reg_mae.clave < reg_mov.clave) ENTONCES
+                    ESCRIBIR(mae_act, reg_mae)
+                    leer_mae
+                SINO
+                    SI (reg_mae.clave = reg_mov.clave) ENTONCES
+                        aux_mae := reg_mae
+                        lote
+                        leer_mae
+                    SINO
+                        SI (reg_mov.TipoMov = 'A') ENTONCES
+                            aux_mae.clave  := reg_mov.clave
+                            aux_mae.campo1 := reg_mov.campo1
+                            aux_mae.campo4 := reg_mov.campo4
+                            aux_mae.Baja   := '-'
+                            leer_mov
+                            lote
+                        SINO
+                            ESCRIBIR("ERROR - sin maestro: ", reg_mov.clave)
+                            leer_mov
+                        FIN_SI
+                    FIN_SI
+                FIN_SI
+            FIN_MIENTRAS
+            CERRAR(mae); CERRAR(mov); CERRAR(mae_act)
+    FIN_ACCION
+  `,
+    [],
+    archivos
+  );
+
+  assert.deepEqual(salida, ["ERROR - sin maestro: 50"]);
+  const filas = archivos["mae_act.tsv"].trim().split("\n").slice(1);
+  assert.deepEqual(filas, [
+    "10\tTeclado RGB\t1500\t-",
+    "20\tMouse\t500\t-",
+    "30\tParlante\t2600\t-",
+    "40\tMonitor\t9000\t*",
+  ]);
+});

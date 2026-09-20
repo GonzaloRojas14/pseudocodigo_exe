@@ -121,7 +121,9 @@ const KEYWORDS: Record<string, KeywordSpec> = {
   nfds: { type: "NFDS", notation: "moderna" },
   nofds: { type: "NFDS", notation: "vieja" },
   arr: { type: "ARR" },
+  arrancar: { type: "ARR", note: "La cátedra lo abrevia: ARR(sec)." },
   avz: { type: "AVZ" },
+  avanzar: { type: "AVZ", note: "La cátedra lo abrevia: AVZ(sec, v)." },
   crear: { type: "CREAR" },
   existe: { type: "EXISTE" },
 

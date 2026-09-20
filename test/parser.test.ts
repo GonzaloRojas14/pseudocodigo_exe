@@ -332,3 +332,39 @@ test("un tipo inválido enumera los tipos que sí valen", () => {
   `;
   assert.ok(errors(source).some((m) => m.includes("Los tipos son") && m.includes("AN(n)")), errors(source).join(" | "));
 });
+
+test("ARRANCAR y AVANZAR se aceptan, avisando la forma abreviada de la cátedra", () => {
+  const source = `
+    ACCION variantes ES
+        Ambiente
+            sec : SECUENCIA de caracter
+            v : caracter
+        Proceso
+            ARRANCAR(sec)
+            AVANZAR(sec, v)
+            CERRAR(sec)
+    FIN_ACCION
+  `;
+  assert.deepEqual(errors(source), []);
+  const avisos = warnings(source);
+  assert.ok(avisos.some((m) => m.includes("ARR(sec)")), avisos.join(" | "));
+  assert.ok(avisos.some((m) => m.includes("AVZ(sec, v)")));
+});
+
+test("un SEGUN con rangos explica que eso va con SI ... SINO", () => {
+  const source = `
+    ACCION segun_rango ES
+        Ambiente
+            suma : entero
+        Proceso
+            suma := 10
+            SEGUN suma HACER
+                <= 50: ESCRIBIR("menor")
+            FIN_SEGUN
+    FIN_ACCION
+  `;
+  assert.ok(
+    errors(source).some((m) => m.includes("no con comparaciones") && m.includes("SI ... SINO")),
+    errors(source).join(" | ")
+  );
+});

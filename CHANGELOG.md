@@ -1,5 +1,13 @@
 # Cambios
 
+## 0.7.0
+
+- **Los archivos indexados se ejecutan**: `SI EXISTE`, alta con `ESCRIBIR`, `RE-ESCRIBIR` y `ELIMINAR`, con el maestro persistiendo entre corridas.
+- Las trampas del indexado se explican en vez de fallar raro: `RE-ESCRIBIR` sin `LEER` previo, recorrerlo con `NFDA`, `SI EXISTE` antes de leer, o un alta con clave repetida.
+- `ARRANCAR` y `AVANZAR` se aceptan como sinónimos de `ARR` y `AVZ`, avisando la forma abreviada.
+- Un `SEGUN` con comparaciones en las ramas explica que eso va con una cascada de `SI ... SINO`.
+- Ejemplo nuevo: ABM indexado completo, con la plantilla de la cátedra.
+
 ## 0.6.0
 
 - **Los archivos secuenciales y las secuencias se ejecutan.** Con eso andan los ejercicios de corte de control, mezcla y actualización, que no necesitan nada más del lenguaje.

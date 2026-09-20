@@ -11,6 +11,7 @@ const afuera = fs.mkdtempSync(path.join(os.tmpdir(), "aed-suelto-"));
 
 function escribir(nombre, contenido) {
   const destino = path.join(afuera, nombre);
+  fs.mkdirSync(path.dirname(destino), { recursive: true });
   fs.writeFileSync(destino, contenido, "utf8");
   return vscode.Uri.file(destino);
 }
@@ -139,5 +140,82 @@ describe("Un archivo suelto, sin carpeta abierta", () => {
 
   after(() => {
     fs.rmSync(afuera, { recursive: true, force: true });
+  });
+});
+
+describe("Archivos y secuencias en VS Code de verdad", () => {
+  let api;
+
+  before(async () => {
+    const extension = vscode.extensions.getExtension("gonzalo.aed-pseudocodigo");
+    api = await extension.activate();
+  });
+
+  const PROGRAMA_ARCHIVO = [
+    "ACCION ventas ES",
+    "    Ambiente",
+    "        venta = REGISTRO",
+    "            sucursal : AN(20)",
+    "            importe  : real",
+    "        FIN_REGISTRO",
+    "        arch : ARCHIVO de venta",
+    "        r : venta",
+    "        total : real",
+    "    Proceso",
+    "        total := 0",
+    "        ABRIR E/(arch)",
+    "        LEER(arch, r)",
+    "        MIENTRAS NFDA(arch) HACER",
+    "            total := total + r.importe",
+    "            LEER(arch, r)",
+    "        FIN_MIENTRAS",
+    '        ESCRIBIR("total: ", total)',
+    "        CERRAR(arch)",
+    "FIN_ACCION",
+    "",
+  ].join("\n");
+
+  it("el comando genera la plantilla de datos con las columnas del registro", async () => {
+    const uri = escribir("ventas.frre", PROGRAMA_ARCHIVO);
+    const document = await vscode.workspace.openTextDocument(uri);
+    await vscode.window.showTextDocument(document);
+
+    await vscode.commands.executeCommand("aed.generarDatos");
+
+    const esperado = path.join(afuera, "ventas.datos", "arch.tsv");
+    await esperarA("que se cree el archivo de datos", () => fs.existsSync(esperado));
+    assert.equal(fs.readFileSync(esperado, "utf8").trim(), "sucursal\timporte");
+  });
+
+  it("y con los datos cargados, el algoritmo los lee y suma", async () => {
+    const uri = escribir("ventas2.frre", PROGRAMA_ARCHIVO);
+    fs.mkdirSync(path.join(afuera, "ventas2.datos"), { recursive: true });
+    fs.writeFileSync(
+      path.join(afuera, "ventas2.datos", "arch.tsv"),
+      "sucursal\timporte\nNorte\t100\nSur\t250.5\n",
+      "utf8"
+    );
+
+    const document = await vscode.workspace.openTextDocument(uri);
+    await vscode.window.showTextDocument(document);
+
+    const pty = await api.ejecutar();
+    const salida = capturar(pty);
+    pty.open();
+    await esperarA("que termine", () => pty.finalizado);
+    assert.match(salida(), /total: 350\.5/, salida());
+  });
+
+  it("si faltan los datos, la terminal dice dónde tienen que estar", async () => {
+    const uri = escribir("sin_datos.frre", PROGRAMA_ARCHIVO);
+    const document = await vscode.workspace.openTextDocument(uri);
+    await vscode.window.showTextDocument(document);
+
+    const pty = await api.ejecutar();
+    const salida = capturar(pty);
+    pty.open();
+    await esperarA("que termine", () => pty.finalizado);
+    assert.match(salida(), /No encontré los datos de "arch"/, salida());
+    assert.match(salida(), /Generar plantilla de datos/);
   });
 });

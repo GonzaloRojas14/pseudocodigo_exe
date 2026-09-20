@@ -192,17 +192,16 @@ async function generarDatos(): Promise<void> {
   if (existentes.length) partes.push(`ya estaban ${existentes.join(", ")}`);
   if (problemas.length) partes.push(`no pude con ${problemas.join("; ")}`);
 
-  const accion = await vscode.window.showInformationMessage(
-    `Datos en ${path.basename(carpeta)}/: ${partes.join("; ")}.`,
-    "Abrir"
-  );
-  if (accion === "Abrir") {
-    const primero = creados[0] ?? existentes[0];
-    if (primero) {
+  // la notificación no se espera: los archivos ya están escritos y el comando termina acá
+  void vscode.window
+    .showInformationMessage(`Datos en ${path.basename(carpeta)}/: ${partes.join("; ")}.`, "Abrir")
+    .then(async (accion) => {
+      if (accion !== "Abrir") return;
+      const primero = creados[0] ?? existentes[0];
+      if (!primero) return;
       const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(path.join(carpeta, primero)));
       await vscode.window.showTextDocument(doc);
-    }
-  }
+    });
 }
 
 export function deactivate(): void {

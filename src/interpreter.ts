@@ -82,6 +82,8 @@ class Interpreter {
   private subprograms = new Map<string, SubprogramDecl>();
   private globals = new Env();
   private steps = 0;
+  /** resultado del último LEER sobre un archivo indexado, para SI EXISTE */
+  private existe: boolean | undefined;
 
   constructor(
     private program: Program,
@@ -186,9 +188,11 @@ class Interpreter {
         const registro =
           type.element.kind === "named" ? this.types.get(type.element.name.toLowerCase()) : undefined;
         const columnas = registro ? columnasDe(type.element, this.types, [], type.pos) : [];
-        return new ArchivoAbierto(name, registro, columnas, () =>
+        const archivo = new ArchivoAbierto(name, registro, columnas, () =>
           registro ? (this.defaultValue(type.element) as RecordVal) : new RecordVal("", new Map())
         );
+        archivo.indexadoPor = [...type.indexedBy];
+        return archivo;
       }
       case "secuencia": {
         const esCaracter =
@@ -381,11 +385,30 @@ class Interpreter {
         return;
       }
       case "RE-ESCRIBIR":
-      case "ELIMINAR":
-        throw new RuntimeError(
-          `${stmt.op} es de archivos indexados, que llegan en la próxima entrega.`,
-          stmt.pos
-        );
+      case "ELIMINAR": {
+        const [archExpr, regExpr] = stmt.args;
+        if (!archExpr || !regExpr) {
+          throw new RuntimeError(
+            `${stmt.op} va con el archivo y el registro: ${stmt.op}(arch, reg).`,
+            stmt.pos
+          );
+        }
+        const recurso = await this.recurso(archExpr, env, stmt.pos);
+        if (!(recurso instanceof ArchivoAbierto) || !recurso.esIndexado) {
+          throw new RuntimeError(
+            `${stmt.op} es para archivos declarados INDEXADO por una clave.`,
+            stmt.pos
+          );
+        }
+        const registro = (await this.resolveSlot(regExpr, env)).get();
+        if (!(registro instanceof RecordVal)) {
+          throw new RuntimeError(`${stmt.op} necesita el registro completo.`, stmt.pos);
+        }
+        if (stmt.op === "RE-ESCRIBIR") recurso.reescribir(registro, stmt.pos);
+        else recurso.eliminar(registro, stmt.pos);
+        this.existe = undefined;
+        return;
+      }
     }
   }
 
@@ -443,17 +466,38 @@ class Interpreter {
 
     if (destino instanceof ArchivoAbierto) {
       const slot = await this.resolveSlot(resto[0], env);
+
       if (stmt.op === "LEER") {
+        if (destino.esIndexado) {
+          const buscado = slot.get();
+          if (!(buscado instanceof RecordVal)) {
+            throw new RuntimeError(
+              `En un archivo indexado se busca con un registro que tenga la clave cargada: ` +
+                `reg.${destino.indexadoPor[0] ?? "clave"} := ... y después LEER(${destino.nombre}, reg).`,
+              stmt.pos
+            );
+          }
+          const encontrado = destino.buscarPorClave(buscado, stmt.pos);
+          this.existe = encontrado !== undefined;
+          if (encontrado) slot.set(encontrado);
+          return;
+        }
         const registro = destino.leer(stmt.pos);
         if (registro) slot.set(registro);
         return;
       }
+
       const valor = slot.get();
       if (!(valor instanceof RecordVal)) {
         throw new RuntimeError(
           `En "${destino.nombre}" se graban registros completos: ESCRIBIR(${destino.nombre}, reg).`,
           stmt.pos
         );
+      }
+      if (destino.esIndexado) {
+        destino.altaIndexada(valor, stmt.pos);
+        this.existe = undefined;
+        return;
       }
       destino.escribir(valor, stmt.pos);
       return;
@@ -614,10 +658,14 @@ class Interpreter {
       case "bool":
         return expr.value;
       case "existe":
-        throw new RuntimeError(
-          "SI EXISTE es de archivos indexados, que llegan en la próxima entrega.",
-          expr.pos
-        );
+        if (this.existe === undefined) {
+          throw new RuntimeError(
+            "SI EXISTE pregunta por el resultado del último LEER sobre un archivo indexado, y todavía no se leyó ninguno. " +
+              "Primero va la clave, después el LEER, y recién ahí el SI EXISTE.",
+            expr.pos
+          );
+        }
+        return this.existe;
       case "ident": {
         const cell = env.lookup(expr.name);
         if (!cell) {
@@ -644,6 +692,14 @@ class Interpreter {
             throw new RuntimeError(`${expr.callee.toUpperCase()} va con el archivo o la secuencia entre paréntesis.`, expr.pos);
           }
           const recurso = await this.recurso(expr.args[0], env, expr.pos);
+          if (recurso instanceof ArchivoAbierto && recurso.esIndexado) {
+            throw new RuntimeError(
+              `"${recurso.nombre}" es un archivo INDEXADO: no se recorre con ${expr.callee.toUpperCase()}, ` +
+                "se accede por clave. El recorrido de principio a fin es de los archivos secuenciales " +
+                "(errores-y-trampas, trampas conceptuales).",
+              expr.pos
+            );
+          }
           const fin =
             recurso instanceof ArchivoAbierto
               ? recurso.fda

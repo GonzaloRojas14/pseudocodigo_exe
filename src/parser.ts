@@ -732,6 +732,12 @@ class Parser {
       if (this.check("OTROS") || this.check("CONTRARIO")) {
         this.next();
       } else {
+        if (RELATIONAL.has(this.current.type)) {
+          this.error(
+            `Las ramas de un SEGUN van con valores sueltos ('A', 3, "ISI"), no con comparaciones. ` +
+              "Para rangos va una cascada de SI ... SINO ... FIN_SI."
+          );
+        }
         do {
           labels.push(this.parsePrimary());
         } while (this.accept(","));

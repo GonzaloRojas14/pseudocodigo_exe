@@ -140,7 +140,10 @@ export class ArchivoAbierto implements Archivo {
   modo: "E" | "S" | "ES" = "E";
   /** el último LEER dejó el cursor acá: lo necesita RE-ESCRIBIR */
   ultimaLeida = -1;
-  private modificado = false;
+  modificado = false;
+
+  /** campos que forman la clave, si el archivo es INDEXADO */
+  indexadoPor: string[] = [];
 
   constructor(
     readonly nombre: string,
@@ -148,6 +151,84 @@ export class ArchivoAbierto implements Archivo {
     private columnas: Columna[],
     private plantillaVacia: () => RecordVal
   ) {}
+
+  get esIndexado(): boolean {
+    return this.indexadoPor.length > 0;
+  }
+
+  /** la clave de un registro, como texto, para poder buscarla */
+  private claveDe(registro: RecordVal, pos?: Pos): string {
+    return this.indexadoPor
+      .map((campo) => {
+        const valor = registro.fields.get(campo.toLowerCase());
+        if (valor === undefined) {
+          throw new RuntimeError(
+            `El registro no tiene el campo "${campo}", que es la clave por la que está indexado "${this.nombre}".`,
+            pos
+          );
+        }
+        return formatValue(valor);
+      })
+      .join("\u0001");
+  }
+
+  private posicionDe(registro: RecordVal, pos?: Pos): number {
+    const clave = this.claveDe(registro, pos);
+    return this.filas.findIndex((fila) => this.claveDe(fila, pos) === clave);
+  }
+
+  /** busca por clave: deja el registro completo si existe */
+  buscarPorClave(registro: RecordVal, pos?: Pos): RecordVal | undefined {
+    this.exigirAbierto(pos);
+    const indice = this.posicionDe(registro, pos);
+    this.ultimaLeida = indice;
+    if (indice < 0) return undefined;
+    return this.filas[indice].clone();
+  }
+
+  altaIndexada(registro: RecordVal, pos?: Pos): void {
+    this.exigirAbierto(pos);
+    if (this.posicionDe(registro, pos) >= 0) {
+      throw new RuntimeError(
+        `Ya hay un registro con esa clave en "${this.nombre}": un alta pide que la clave NO exista. ` +
+          "Antes del ESCRIBIR va el LEER y el SI EXISTE.",
+        pos
+      );
+    }
+    this.filas.push(registro.clone());
+    this.marcarModificado();
+  }
+
+  reescribir(registro: RecordVal, pos?: Pos): void {
+    this.exigirAbierto(pos);
+    if (this.ultimaLeida < 0) {
+      throw new RuntimeError(
+        `RE-ESCRIBIR sin un LEER que haya encontrado el registro: no hay posición sobre la cual sobreescribir. ` +
+          `Va clave → LEER(${this.nombre}, reg) → SI EXISTE → RE-ESCRIBIR.`,
+        pos
+      );
+    }
+    this.filas[this.ultimaLeida] = registro.clone();
+    this.marcarModificado();
+  }
+
+  eliminar(registro: RecordVal, pos?: Pos): void {
+    this.exigirAbierto(pos);
+    const indice = this.posicionDe(registro, pos);
+    if (indice < 0) {
+      throw new RuntimeError(
+        `No hay ningún registro con esa clave en "${this.nombre}" para eliminar.`,
+        pos
+      );
+    }
+    this.filas.splice(indice, 1);
+    this.ultimaLeida = -1;
+    this.marcarModificado();
+  }
+
+  private marcarModificado(): void {
+    this.modificado = true;
+  }
 
   abrir(modo: "E" | "S" | "ES", fs: SistemaDeArchivos, pos?: Pos): void {
     if (!this.registro) {
@@ -169,6 +250,12 @@ export class ArchivoAbierto implements Archivo {
     }
 
     const contenido = fs.leer(this.nombre, ".tsv");
+    if (contenido === undefined && this.esIndexado && modo === "ES") {
+      // un ABM puede arrancar con el maestro vacío: se crea al cerrar
+      this.filas = [];
+      this.modificado = true;
+      return;
+    }
     if (contenido === undefined) {
       throw new RuntimeError(
         `No encontré los datos de "${this.nombre}". Tendría que estar en ${fs.ruta(this.nombre, ".tsv")}. ` +
@@ -208,6 +295,13 @@ export class ArchivoAbierto implements Archivo {
 
   leer(pos?: Pos): RecordVal | undefined {
     this.exigirAbierto(pos);
+    if (this.esIndexado) {
+      throw new RuntimeError(
+        `"${this.nombre}" es un archivo INDEXADO: no se recorre de principio a fin, se accede por clave. ` +
+          `Asigná la clave en el registro y después LEER(${this.nombre}, reg).`,
+        pos
+      );
+    }
     if (this.modo === "S") {
       throw new RuntimeError(
         `"${this.nombre}" se abrió solo para escritura (ABRIR /S): no se puede leer de él.`,
