@@ -2,7 +2,7 @@
   "name": "aed-pseudocodigo",
   "displayName": "AED Pseudocódigo (UTN-FRRe)",
   "description": "Resaltado, diagnósticos y ejecución del pseudocódigo de Algoritmos y Estructuras de Datos (UTN-FRRe).",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "publisher": "gonzalo",
   "license": "MIT",
   "icon": "icon.png",
@@ -65,6 +65,12 @@
         "command": "aed.usarLenguaje",
         "title": "Usar pseudocódigo AED en este archivo",
         "category": "AED"
+      },
+      {
+        "command": "aed.generarDatos",
+        "title": "Generar plantilla de datos",
+        "category": "AED",
+        "icon": "$(new-file)"
       }
     ],
     "keybindings": [
@@ -99,6 +105,11 @@
           "command": "aed.run",
           "when": "editorLangId == aed-pseudocodigo",
           "group": "aed@1"
+        },
+        {
+          "command": "aed.generarDatos",
+          "when": "editorLangId == aed-pseudocodigo",
+          "group": "aed@2"
         }
       ],
       "explorer/context": [

@@ -23,7 +23,14 @@ export function warnings(source: string): string[] {
     .map((d) => d.message);
 }
 
-export async function execute(source: string, inputs: string[] = []): Promise<string[]> {
+/** archivos en memoria: { "arch.tsv": "contenido" } */
+export type Archivos = Record<string, string>;
+
+export async function execute(
+  source: string,
+  inputs: string[] = [],
+  archivos?: Archivos
+): Promise<string[]> {
   const parsed = parse(source);
   if (!parsed.program) {
     throw new Error(`No parsea: ${parsed.diagnostics.map((d) => d.message).join(" | ")}`);
@@ -35,6 +42,13 @@ export async function execute(source: string, inputs: string[] = []): Promise<st
     readLine: async () => {
       if (queue.length === 0) throw new Error("El programa pidió más entrada de la esperada.");
       return queue.shift() as string;
+    },
+    archivos: archivos && {
+      ruta: (nombre, extension) => `datos/${nombre}${extension}`,
+      leer: (nombre, extension) => archivos[`${nombre}${extension}`],
+      escribir: (nombre, extension, contenido) => {
+        archivos[`${nombre}${extension}`] = contenido;
+      },
     },
   };
   await run(parsed.program, host, { maxSteps: 200_000 });

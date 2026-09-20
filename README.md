@@ -46,11 +46,22 @@ FIN_ACCION
 | Ejecutar | `F5`, `Ctrl+F5` / `Cmd+F5`, o `Ctrl+Alt+N` / `Cmd+Alt+N` |
 | Cancelar la ejecución | `Ctrl+C` en la terminal |
 
+## Archivos y secuencias
+
+Un `ARCHIVO` o una `SECUENCIA` no tienen los datos adentro del algoritmo, así que van al lado, en una carpeta `<ejercicio>.datos/`:
+
+- un `ARCHIVO de alumno` lee `alumno.tsv`: una columna por campo (los registros anidados se aplanan, `fecha_nac.anio`) y una fila por registro, separadas por tabulaciones;
+- una `SECUENCIA de caracter` lee un `.txt` con la cinta tal cual, con sus espacios y sus marcas de fin.
+
+No hay que escribirlos a mano desde cero: el comando **"AED: Generar plantilla de datos"** (click derecho en el editor) lee el `Ambiente` y crea cada archivo con sus columnas ya puestas. Los archivos de salida (`ABRIR /S`, `CREAR`) se escriben en esa misma carpeta al `CERRAR`.
+
+`FDA` y `FDS` valen lo mismo que en la cátedra: se prenden cuando el último `LEER` o `AVZ` **no trajo nada**, que es lo que hace que el último registro se procese y que las plantillas de mezcla funcionen.
+
 ## Qué entra y qué todavía no
 
-**Anda:** `ACCION/Ambiente/Proceso`, todos los tipos (`entero`, `real`, `caracter`, `logico`, `AN(n)`, `N(n)`, `N(e,d)`, subrangos, enumerados), registros anidados, arreglos y matrices, `SI`/`SEGUN`/`MIENTRAS`/`REPETIR`/`PARA` con incremento, funciones y procedimientos con paso por valor y por referencia, y `ESCRIBIR`/`LEER` por pantalla y teclado.
+**Anda:** `ACCION/Ambiente/Proceso`, todos los tipos (`entero`, `real`, `caracter`, `logico`, `AN(n)`, `N(n)`, `N(e,d)`, subrangos, enumerados), registros anidados, arreglos y matrices, `SI`/`SEGUN`/`MIENTRAS`/`REPETIR`/`PARA` con incremento, funciones y procedimientos con paso por valor y por referencia, `ESCRIBIR`/`LEER` por pantalla y teclado, y **archivos secuenciales y secuencias** — con eso corren corte de control, mezcla y actualización.
 
-**Todavía no se ejecuta:** archivos secuenciales e indexados y secuencias (`ABRIR`, `LEER` de archivo, `ARR`, `AVZ`, `NFDA`, `SI EXISTE`, `RE-ESCRIBIR`). Se escriben, se resaltan y se chequean, pero al ejecutarlos la terminal te avisa que eso llega en una próxima versión. Eso deja afuera, por ahora, los ejercicios de corte de control, mezcla y actualización.
+**Todavía no se ejecuta:** los archivos indexados (`SI EXISTE`, `RE-ESCRIBIR`, `ELIMINAR`) y las listas con punteros. Se escriben, se resaltan y se chequean, pero al ejecutarlos la terminal avisa que llegan en una próxima versión.
 
 ## Licencia
 

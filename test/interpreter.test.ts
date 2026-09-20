@@ -338,25 +338,6 @@ test("división por cero", async () => {
   );
 });
 
-test("intentar ejecutar archivos avisa que es la próxima entrega", async () => {
-  await assert.rejects(
-    execute(`
-      ACCION con_archivo ES
-          Ambiente
-              reg = REGISTRO
-                  clave : entero
-              FIN_REGISTRO
-              arch : ARCHIVO de reg
-              r : reg
-          Proceso
-              ABRIR E/(arch)
-              LEER(arch, r)
-              CERRAR(arch)
-      FIN_ACCION
-    `),
-    /próxima entrega/
-  );
-});
 
 test("los caracteres se comparan tal cual: 's' no es 'S' (por eso la rama acepta las dos)", async () => {
   const soloMayuscula = `
@@ -486,5 +467,329 @@ test("un procedimiento no se puede usar como si devolviera un valor", async () =
       FIN_ACCION
     `),
     /es un PROCEDIMIENTO: no devuelve ningún valor/
+  );
+});
+
+// ── Fase 2: archivos secuenciales y secuencias ─────────────────────────────
+
+const ALUMNOS = [
+  "nro_leg\tapyn\tcarrera\tfecha_nac.anio\tfecha_nac.mes\tfecha_nac.dia",
+  "1042\tRojas Gonzalo\tISI\t2004\t7\t15",
+  "1043\tPerez Ana\tIQ\t2003\t11\t2",
+  "1044\tGomez Luis\tISI\t2005\t1\t30",
+  "",
+].join("\n");
+
+const DECLARA_ALUMNO = `
+        fecha = REGISTRO
+            anio : 1900..9999
+            mes  : 1..12
+            dia  : 1..31
+        FIN_REGISTRO
+        alumno = REGISTRO
+            nro_leg   : entero
+            apyn      : AN(50)
+            carrera   : ('ISI','IEM','IQ')
+            fecha_nac : fecha
+        FIN_REGISTRO
+`;
+
+test("recorre un archivo secuencial y procesa también el último registro", async () => {
+  const salida = await execute(
+    `
+    ACCION listado ES
+        Ambiente
+${DECLARA_ALUMNO}
+            arch : ARCHIVO de alumno
+            alu : alumno
+            cont : entero
+        Proceso
+            cont := 0
+            ABRIR E/(arch)
+            LEER(arch, alu)
+            MIENTRAS NFDA(arch) HACER
+                ESCRIBIR(alu.nro_leg, " ", alu.apyn, " ", alu.carrera, " ", alu.fecha_nac.dia)
+                cont := cont + 1
+                LEER(arch, alu)
+            FIN_MIENTRAS
+            ESCRIBIR("total: ", cont)
+            CERRAR(arch)
+    FIN_ACCION
+  `,
+    [],
+    { "arch.tsv": ALUMNOS }
+  );
+  assert.deepEqual(salida, [
+    "1042 Rojas Gonzalo ISI 15",
+    "1043 Perez Ana IQ 2",
+    "1044 Gomez Luis ISI 30",
+    "total: 3",
+  ]);
+});
+
+test("FDA se prende recién cuando el LEER no trajo nada (así funciona la mezcla)", async () => {
+  const salida = await execute(
+    `
+    ACCION fin_de_archivo ES
+        Ambiente
+${DECLARA_ALUMNO}
+            arch : ARCHIVO de alumno
+            alu : alumno
+        Proceso
+            ABRIR E/(arch)
+            LEER(arch, alu)
+            LEER(arch, alu)
+            LEER(arch, alu)
+            SI NFDA(arch) ENTONCES
+                ESCRIBIR("tras el tercero todavía hay dato: ", alu.nro_leg)
+            FIN_SI
+            LEER(arch, alu)
+            SI FDA(arch) ENTONCES
+                ESCRIBIR("el cuarto LEER no trajo nada")
+            FIN_SI
+            CERRAR(arch)
+    FIN_ACCION
+  `,
+    [],
+    { "arch.tsv": ALUMNOS }
+  );
+  assert.deepEqual(salida, ["tras el tercero todavía hay dato: 1044", "el cuarto LEER no trajo nada"]);
+});
+
+test("un archivo de salida queda escrito con su encabezado", async () => {
+  const archivos: Record<string, string> = { "arch.tsv": ALUMNOS };
+  await execute(
+    `
+    ACCION filtrar ES
+        Ambiente
+${DECLARA_ALUMNO}
+            arch, sal : ARCHIVO de alumno
+            alu : alumno
+        Proceso
+            ABRIR E/(arch); ABRIR /S(sal)
+            LEER(arch, alu)
+            MIENTRAS NFDA(arch) HACER
+                SI (alu.carrera = 'ISI') ENTONCES
+                    ESCRIBIR(sal, alu)
+                FIN_SI
+                LEER(arch, alu)
+            FIN_MIENTRAS
+            CERRAR(arch); CERRAR(sal)
+    FIN_ACCION
+  `,
+    [],
+    archivos
+  );
+  const filas = archivos["sal.tsv"].trim().split("\n");
+  assert.equal(filas.length, 3);
+  assert.match(filas[0], /^nro_leg\tapyn\tcarrera/);
+  assert.ok(filas[1].startsWith("1042\tRojas Gonzalo\tISI"), filas[1]);
+  assert.ok(filas[2].startsWith("1044\tGomez Luis\tISI"), filas[2]);
+});
+
+test("corte de control sobre dos claves da los totales de cada nivel", async () => {
+  const salida = await execute(
+    `
+    ACCION corte ES
+        Ambiente
+            venta = REGISTRO
+                sucursal : AN(20)
+                rubro    : AN(20)
+                importe  : real
+            FIN_REGISTRO
+            arch : ARCHIVO de venta ordenado por sucursal y rubro
+            r : venta
+            resg_suc, resg_rubro : AN(20)
+            acum_rubro, acum_suc, total : real
+
+            PROCEDIMIENTO corte_rubro ES
+                Proceso
+                    ESCRIBIR("rubro ", resg_rubro, ": ", acum_rubro)
+                    acum_suc := acum_suc + acum_rubro
+                    acum_rubro := 0
+                    resg_rubro := r.rubro
+            FIN_PROCEDIMIENTO
+
+            PROCEDIMIENTO corte_suc ES
+                Proceso
+                    corte_rubro
+                    ESCRIBIR("sucursal ", resg_suc, ": ", acum_suc)
+                    total := total + acum_suc
+                    acum_suc := 0
+                    resg_suc := r.sucursal
+            FIN_PROCEDIMIENTO
+        Proceso
+            ABRIR E/(arch)
+            LEER(arch, r)
+            total := 0; acum_suc := 0; acum_rubro := 0
+            resg_suc := r.sucursal
+            resg_rubro := r.rubro
+            MIENTRAS NFDA(arch) HACER
+                SI (r.sucursal <> resg_suc) ENTONCES
+                    corte_suc
+                SINO
+                    SI (r.rubro <> resg_rubro) ENTONCES
+                        corte_rubro
+                    FIN_SI
+                FIN_SI
+                acum_rubro := acum_rubro + r.importe
+                LEER(arch, r)
+            FIN_MIENTRAS
+            corte_suc
+            ESCRIBIR("TOTAL: ", total)
+            CERRAR(arch)
+    FIN_ACCION
+  `,
+    [],
+    {
+      "arch.tsv": [
+        "sucursal\trubro\timporte",
+        "Norte\tBebidas\t100",
+        "Norte\tBebidas\t50",
+        "Norte\tLacteos\t80",
+        "Sur\tBebidas\t200",
+        "Sur\tLacteos\t150",
+        "",
+      ].join("\n"),
+    }
+  );
+  assert.deepEqual(salida, [
+    "rubro Bebidas: 150",
+    "rubro Lacteos: 80",
+    "sucursal Norte: 230",
+    "rubro Bebidas: 200",
+    "rubro Lacteos: 150",
+    "sucursal Sur: 350",
+    "TOTAL: 580",
+  ]);
+});
+
+test("una secuencia se recorre con ARR y AVZ, y los barridos funcionan", async () => {
+  const salida = await execute(
+    `
+    ACCION palabras ES
+        Ambiente
+            sec : SECUENCIA de caracter
+            v : caracter
+            pal, ora : entero
+        Proceso
+            pal := 0; ora := 0
+            ARR(sec); AVZ(sec, v)
+            MIENTRAS (v <> "#") Y NFDS(sec) HACER
+                MIENTRAS (v <> ".") Y NFDS(sec) HACER
+                    MIENTRAS (v = " ") HACER
+                        AVZ(sec, v)
+                    FIN_MIENTRAS
+                    pal := pal + 1
+                    MIENTRAS (v <> " ") Y (v <> ".") Y NFDS(sec) HACER
+                        AVZ(sec, v)
+                    FIN_MIENTRAS
+                FIN_MIENTRAS
+                ora := ora + 1
+                AVZ(sec, v)
+            FIN_MIENTRAS
+            ESCRIBIR(ora, " oraciones, ", pal, " palabras")
+            CERRAR(sec)
+    FIN_ACCION
+  `,
+    [],
+    { "sec.txt": "EL GATO NEGRO DUERME.LA CASA ES ROJA.#" }
+  );
+  assert.deepEqual(salida, ["2 oraciones, 8 palabras"]);
+});
+
+test("una secuencia de salida se crea y se escribe", async () => {
+  const archivos: Record<string, string> = { "sec.txt": "abc" };
+  await execute(
+    `
+    ACCION copiar ES
+        Ambiente
+            sec, sal : SECUENCIA de caracter
+            v : caracter
+        Proceso
+            ARR(sec); AVZ(sec, v)
+            CREAR(sal)
+            MIENTRAS NFDS(sec) HACER
+                ESCRIBIR(sal, v)
+                AVZ(sec, v)
+            FIN_MIENTRAS
+            CERRAR(sec); CERRAR(sal)
+    FIN_ACCION
+  `,
+    [],
+    archivos
+  );
+  assert.equal(archivos["sal.txt"].trim(), "abc");
+});
+
+test("si faltan los datos, el mensaje dice dónde tienen que estar", async () => {
+  await assert.rejects(
+    execute(
+      `
+      ACCION sin_datos ES
+          Ambiente
+              reg = REGISTRO
+                  clave : entero
+              FIN_REGISTRO
+              arch : ARCHIVO de reg
+              r : reg
+          Proceso
+              ABRIR E/(arch)
+              LEER(arch, r)
+              CERRAR(arch)
+      FIN_ACCION
+    `,
+      [],
+      {}
+    ),
+    /No encontré los datos de "arch".*datos\/arch\.tsv.*Generar plantilla de datos/s
+  );
+});
+
+test("una celda que no cuadra con el tipo dice fila y columna", async () => {
+  await assert.rejects(
+    execute(
+      `
+      ACCION celda_mala ES
+          Ambiente
+              reg = REGISTRO
+                  clave : entero
+                  precio : real
+              FIN_REGISTRO
+              arch : ARCHIVO de reg
+              r : reg
+          Proceso
+              ABRIR E/(arch)
+              LEER(arch, r)
+              CERRAR(arch)
+      FIN_ACCION
+    `,
+      [],
+      { "arch.tsv": "clave\tprecio\n1\tabc\n" }
+    ),
+    /fila 2, columna "precio": se esperaba un número y dice "abc"/
+  );
+});
+
+test("leer de un archivo abierto solo para escritura se explica", async () => {
+  await assert.rejects(
+    execute(
+      `
+      ACCION modo_mal ES
+          Ambiente
+              reg = REGISTRO
+                  clave : entero
+              FIN_REGISTRO
+              arch : ARCHIVO de reg
+              r : reg
+          Proceso
+              ABRIR /S(arch)
+              LEER(arch, r)
+      FIN_ACCION
+    `,
+      [],
+      { "arch.tsv": "clave\n1\n" }
+    ),
+    /se abrió solo para escritura \(ABRIR \/S\): no se puede leer/
   );
 });

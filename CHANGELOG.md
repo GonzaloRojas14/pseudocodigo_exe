@@ -1,5 +1,14 @@
 # Cambios
 
+## 0.6.0
+
+- **Los archivos secuenciales y las secuencias se ejecutan.** Con eso andan los ejercicios de corte de control, mezcla y actualización, que no necesitan nada más del lenguaje.
+- Los datos van en `<ejercicio>.datos/`: un `.tsv` por archivo de registros y un `.txt` por secuencia.
+- Comando nuevo **"AED: Generar plantilla de datos"**: lee el Ambiente y crea cada archivo con sus columnas.
+- Los archivos de salida (`ABRIR /S`, `CREAR`) se escriben al `CERRAR`, y la terminal dice dónde quedaron.
+- Si una celda no cuadra con el tipo declarado, el error dice fila y columna.
+- Dos ejemplos nuevos que vienen con la extensión: corte de control y recorrido de secuencia, con sus datos.
+
 ## 0.5.1
 
 - Usar un procedimiento como si devolviera un valor ahora se marca al escribir, y en ejecución ya no se ejecuta antes de avisar.

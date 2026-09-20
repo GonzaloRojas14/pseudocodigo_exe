@@ -1,3 +1,14 @@
+import {
+  ArrayVal,
+  CancelledError,
+  RecordVal,
+  RuntimeError,
+  cloneValue,
+  formatValue,
+  type Value,
+} from "./valores";
+export { ArrayVal, CancelledError, RecordVal, RuntimeError, formatValue, type Value } from "./valores";
+import { ArchivoAbierto, SecuenciaAbierta, columnasDe, type SistemaDeArchivos } from "./archivos";
 import type {
   Declaration,
   Expr,
@@ -15,57 +26,9 @@ export interface Host {
   /** LEER por teclado */
   readLine(): Promise<string>;
   isCancelled?(): boolean;
+  /** de dónde salen los datos de los ARCHIVO y las SECUENCIA */
+  archivos?: SistemaDeArchivos;
 }
-
-export class RuntimeError extends Error {
-  constructor(message: string, readonly pos?: Pos) {
-    super(message);
-  }
-}
-
-export class CancelledError extends Error {}
-
-export class RecordVal {
-  constructor(readonly typeName: string, readonly fields: Map<string, Value>) {}
-
-  clone(): RecordVal {
-    const copy = new Map<string, Value>();
-    for (const [key, value] of this.fields) copy.set(key, cloneValue(value));
-    return new RecordVal(this.typeName, copy);
-  }
-}
-
-export class ArrayVal {
-  constructor(readonly dims: { low: number; high: number }[], readonly data: Value[]) {}
-
-  offset(indices: number[], pos?: Pos): number {
-    let offset = 0;
-    for (let d = 0; d < this.dims.length; d++) {
-      const dim = this.dims[d];
-      const idx = indices[d];
-      if (idx < dim.low || idx > dim.high) {
-        throw new RuntimeError(
-          `El índice ${idx} queda fuera del rango declarado [${dim.low}..${dim.high}].`,
-          pos
-        );
-      }
-      const size = dim.high - dim.low + 1;
-      offset = offset * size + (idx - dim.low);
-    }
-    return offset;
-  }
-
-  clone(): ArrayVal {
-    return new ArrayVal(this.dims, this.data.map(cloneValue));
-  }
-}
-
-/** marcador de ARCHIVO/SECUENCIA: declarables hoy, ejecutables en la próxima entrega */
-export class FileVal {
-  constructor(readonly kind: "archivo" | "secuencia", readonly name: string) {}
-}
-
-export type Value = number | string | boolean | RecordVal | ArrayVal | FileVal;
 
 class Cell {
   /** con `slot` la celda es un alias: así funciona el pasaje por referencia (var) */
@@ -104,10 +67,6 @@ interface Slot {
   set(value: Value): void;
   type?: TypeNode;
 }
-
-const FILE_PENDING =
-  "Todavía no puedo ejecutar archivos ni secuencias (ABRIR, LEER de archivo, ARR, AVZ, ...). " +
-  "Eso llega en la próxima entrega; por ahora se pueden ejecutar los algoritmos de teclado y pantalla.";
 
 export interface RunOptions {
   /** corta la ejecución si se pasa: casi siempre es un ciclo infinito */
@@ -223,10 +182,21 @@ class Interpreter {
         for (const field of record.fields) fields.set(field.name.toLowerCase(), this.defaultValue(field.type));
         return new RecordVal(record.name, fields);
       }
-      case "archivo":
-        return new FileVal("archivo", name);
-      case "secuencia":
-        return new FileVal("secuencia", name);
+      case "archivo": {
+        const registro =
+          type.element.kind === "named" ? this.types.get(type.element.name.toLowerCase()) : undefined;
+        const columnas = registro ? columnasDe(type.element, this.types, [], type.pos) : [];
+        return new ArchivoAbierto(name, registro, columnas, () =>
+          registro ? (this.defaultValue(type.element) as RecordVal) : new RecordVal("", new Map())
+        );
+      }
+      case "secuencia": {
+        const esCaracter =
+          type.element.kind === "text" ||
+          (type.element.kind === "scalar" &&
+            (type.element.name === "caracter" || type.element.name === "alfanumerico"));
+        return new SecuenciaAbierta(name, esCaracter);
+      }
     }
   }
 
@@ -326,16 +296,106 @@ class Interpreter {
         return;
       }
       case "file":
-        throw new RuntimeError(FILE_PENDING, stmt.pos);
+        await this.execFile(stmt, env);
+        return;
+    }
+  }
+
+  private get fs(): SistemaDeArchivos {
+    if (!this.host.archivos) {
+      throw new RuntimeError(
+        "Para usar archivos o secuencias hace falta guardar el algoritmo en un archivo, así los datos se buscan al lado."
+      );
+    }
+    return this.host.archivos;
+  }
+
+  private async recurso(expr: Expr, env: Env, pos: Pos): Promise<ArchivoAbierto | SecuenciaAbierta> {
+    const valor = await this.eval(expr, env);
+    if (valor instanceof ArchivoAbierto || valor instanceof SecuenciaAbierta) return valor;
+    throw new RuntimeError(
+      `"${describe(expr)}" no es un ARCHIVO ni una SECUENCIA: revisá cómo está declarado en el Ambiente.`,
+      pos
+    );
+  }
+
+  private async execFile(stmt: Extract<Stmt, { kind: "file" }>, env: Env): Promise<void> {
+    switch (stmt.op) {
+      case "ABRIR": {
+        for (const arg of stmt.args) {
+          const recurso = await this.recurso(arg, env, stmt.pos);
+          if (!(recurso instanceof ArchivoAbierto)) {
+            throw new RuntimeError(
+              `"${describe(arg)}" es una SECUENCIA: se arranca con ARR(...) o se crea con CREAR(...), no con ABRIR.`,
+              stmt.pos
+            );
+          }
+          recurso.abrir(stmt.mode ?? "E", this.fs, stmt.pos);
+        }
+        return;
+      }
+      case "CERRAR": {
+        for (const arg of stmt.args) {
+          const recurso = await this.recurso(arg, env, stmt.pos);
+          recurso.cerrar(this.fs);
+        }
+        return;
+      }
+      case "ARR": {
+        for (const arg of stmt.args) {
+          const recurso = await this.recurso(arg, env, stmt.pos);
+          if (!(recurso instanceof SecuenciaAbierta)) {
+            throw new RuntimeError(
+              `"${describe(arg)}" es un ARCHIVO: se abre con ABRIR E/(...), no con ARR.`,
+              stmt.pos
+            );
+          }
+          recurso.arrancar(this.fs, stmt.pos);
+        }
+        return;
+      }
+      case "CREAR": {
+        for (const arg of stmt.args) {
+          const recurso = await this.recurso(arg, env, stmt.pos);
+          if (!(recurso instanceof SecuenciaAbierta)) {
+            throw new RuntimeError(`CREAR es para secuencias; "${describe(arg)}" no lo es.`, stmt.pos);
+          }
+          recurso.crear(stmt.pos);
+        }
+        return;
+      }
+      case "AVZ": {
+        const [secExpr, destinoExpr] = stmt.args;
+        if (!secExpr || !destinoExpr) {
+          throw new RuntimeError("AVZ va con la secuencia y la variable ventana: AVZ(sec, v).", stmt.pos);
+        }
+        const recurso = await this.recurso(secExpr, env, stmt.pos);
+        if (!(recurso instanceof SecuenciaAbierta)) {
+          throw new RuntimeError(`"${describe(secExpr)}" no es una SECUENCIA.`, stmt.pos);
+        }
+        const valor = recurso.avanzar(stmt.pos);
+        if (valor !== undefined) {
+          const slot = await this.resolveSlot(destinoExpr, env);
+          slot.set(this.coerce(valor, slot.type, stmt.pos, describe(destinoExpr)));
+        }
+        return;
+      }
+      case "RE-ESCRIBIR":
+      case "ELIMINAR":
+        throw new RuntimeError(
+          `${stmt.op} es de archivos indexados, que llegan en la próxima entrega.`,
+          stmt.pos
+        );
     }
   }
 
   private async execIo(stmt: Extract<Stmt, { kind: "io" }>, env: Env): Promise<void> {
-    if (stmt.args.length > 0) {
-      const first = stmt.args[0];
-      if (first.kind === "ident") {
-        const cell = env.lookup(first.name);
-        if (cell?.value instanceof FileVal) throw new RuntimeError(FILE_PENDING, stmt.pos);
+    // si el primer argumento es un archivo o una secuencia, la E/S no es por pantalla
+    if (stmt.args.length > 0 && stmt.args[0].kind === "ident") {
+      const destino = env.lookup(stmt.args[0].name)?.value;
+      if (destino instanceof ArchivoAbierto || destino instanceof SecuenciaAbierta) {
+        await this.ioSobreRecurso(stmt, destino, env);
+        return;
       }
     }
 
@@ -366,6 +426,46 @@ class Interpreter {
       }
       slot.set(this.parseInput(pending.shift() as string, slot.type, arg.pos, describe(arg)));
     }
+  }
+
+  private async ioSobreRecurso(
+    stmt: Extract<Stmt, { kind: "io" }>,
+    destino: ArchivoAbierto | SecuenciaAbierta,
+    env: Env
+  ): Promise<void> {
+    const resto = stmt.args.slice(1);
+    if (resto.length === 0) {
+      throw new RuntimeError(
+        `${stmt.op}(${destino.nombre}, ...) necesita también el registro o la variable.`,
+        stmt.pos
+      );
+    }
+
+    if (destino instanceof ArchivoAbierto) {
+      const slot = await this.resolveSlot(resto[0], env);
+      if (stmt.op === "LEER") {
+        const registro = destino.leer(stmt.pos);
+        if (registro) slot.set(registro);
+        return;
+      }
+      const valor = slot.get();
+      if (!(valor instanceof RecordVal)) {
+        throw new RuntimeError(
+          `En "${destino.nombre}" se graban registros completos: ESCRIBIR(${destino.nombre}, reg).`,
+          stmt.pos
+        );
+      }
+      destino.escribir(valor, stmt.pos);
+      return;
+    }
+
+    if (stmt.op === "LEER") {
+      throw new RuntimeError(
+        `De una secuencia se avanza, no se lee: va AVZ(${destino.nombre}, v).`,
+        stmt.pos
+      );
+    }
+    for (const arg of resto) destino.escribir(await this.eval(arg, env), stmt.pos);
   }
 
   private expectsText(type: TypeNode | undefined): boolean {
@@ -514,12 +614,11 @@ class Interpreter {
       case "bool":
         return expr.value;
       case "existe":
-        throw new RuntimeError(FILE_PENDING, expr.pos);
+        throw new RuntimeError(
+          "SI EXISTE es de archivos indexados, que llegan en la próxima entrega.",
+          expr.pos
+        );
       case "ident": {
-        const upper = expr.name.toUpperCase();
-        if (upper === "FDA" || upper === "NFDA" || upper === "FDS" || upper === "NFDS") {
-          throw new RuntimeError(FILE_PENDING, expr.pos);
-        }
         const cell = env.lookup(expr.name);
         if (!cell) {
           const sub = this.subprograms.get(expr.name.toLowerCase());
@@ -540,7 +639,17 @@ class Interpreter {
         return (await this.resolveSlot(expr, env)).get();
       case "callExpr": {
         const key = expr.callee.toLowerCase();
-        if (["fda", "nfda", "fds", "nfds"].includes(key)) throw new RuntimeError(FILE_PENDING, expr.pos);
+        if (["fda", "nfda", "fds", "nfds"].includes(key)) {
+          if (expr.args.length !== 1) {
+            throw new RuntimeError(`${expr.callee.toUpperCase()} va con el archivo o la secuencia entre paréntesis.`, expr.pos);
+          }
+          const recurso = await this.recurso(expr.args[0], env, expr.pos);
+          const fin =
+            recurso instanceof ArchivoAbierto
+              ? recurso.fda
+              : (recurso as SecuenciaAbierta).fds;
+          return key.startsWith("n") ? !fin : fin;
+        }
         if (key === "abso") {
           if (expr.args.length !== 1) throw new RuntimeError("ABSO recibe un solo argumento.", expr.pos);
           return Math.abs(numeric(await this.eval(expr.args[0], env), expr.pos));
@@ -792,23 +901,7 @@ function truthy(value: Value, pos: Pos): boolean {
   );
 }
 
-function cloneValue(value: Value): Value {
-  if (value instanceof RecordVal) return value.clone();
-  if (value instanceof ArrayVal) return value.clone();
-  return value;
-}
 
-export function formatValue(value: Value): string {
-  if (typeof value === "number") {
-    if (Number.isInteger(value)) return String(value);
-    return String(Number(value.toFixed(10)));
-  }
-  if (typeof value === "boolean") return value ? "verdadero" : "falso";
-  if (value instanceof RecordVal) return [...value.fields.values()].map(formatValue).join(" | ");
-  if (value instanceof ArrayVal) return `[${value.data.map(formatValue).join(", ")}]`;
-  if (value instanceof FileVal) return `<${value.kind} ${value.name}>`;
-  return value;
-}
 
 function nombreDelTipo(type: TypeNode | undefined): string {
   if (!type) return "un valor";

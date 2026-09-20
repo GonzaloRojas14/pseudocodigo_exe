@@ -1,5 +1,8 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
 import * as vscode from "vscode";
-import type { Program } from "./ast";
+import { columnasDe, type SistemaDeArchivos } from "./archivos";
+import type { Declaration, Program, RecordDecl } from "./ast";
 import { check } from "./checker";
 import type { Diagnostic } from "./diagnostics";
 import { CancelledError, RuntimeError, run, type Host } from "./interpreter";
@@ -61,6 +64,7 @@ export function activate(context: vscode.ExtensionContext): AedApi {
     ),
     vscode.commands.registerCommand("aed.run", (uri?: vscode.Uri) => runDocument(diagnostics, uri)),
     vscode.commands.registerCommand("aed.usarLenguaje", () => usarLenguaje()),
+    vscode.commands.registerCommand("aed.generarDatos", () => generarDatos()),
     vscode.workspace.onDidOpenTextDocument((document) => ofrecerLenguaje(document))
   );
 
@@ -108,6 +112,99 @@ async function usarLenguaje(): Promise<void> {
   await vscode.languages.setTextDocumentLanguage(editor.document, LANGUAGE_ID);
 }
 
+/** crea los .tsv y .txt que el algoritmo necesita, con las columnas ya puestas */
+async function generarDatos(): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    void vscode.window.showWarningMessage("Abrí el algoritmo para generarle los datos.");
+    return;
+  }
+  const document = editor.document;
+  const carpeta = carpetaDeDatos(document);
+  if (!carpeta) {
+    void vscode.window.showWarningMessage("Guardá el algoritmo en un archivo: los datos van al lado.");
+    return;
+  }
+
+  const { program } = analyze(document.getText());
+  if (!program) {
+    void vscode.window.showErrorMessage("No puedo leer el Ambiente: el algoritmo tiene errores de sintaxis.");
+    return;
+  }
+
+  const tipos = new Map<string, RecordDecl>();
+  const recolectar = (decls: Declaration[]): void => {
+    for (const decl of decls) {
+      if (decl.kind === "record") tipos.set(decl.name.toLowerCase(), decl);
+      if (decl.kind === "subprogram") recolectar(decl.locals);
+    }
+  };
+  recolectar(program.declarations);
+
+  const creados: string[] = [];
+  const existentes: string[] = [];
+  const problemas: string[] = [];
+
+  const procesar = (decls: Declaration[]): void => {
+    for (const decl of decls) {
+      if (decl.kind === "subprogram") {
+        procesar(decl.locals);
+        continue;
+      }
+      if (decl.kind !== "var") continue;
+      const tipo = decl.type;
+      if (tipo.kind !== "archivo" && tipo.kind !== "secuencia") continue;
+
+      for (const nombre of decl.names) {
+        const extension = tipo.kind === "archivo" ? ".tsv" : ".txt";
+        const destino = path.join(carpeta, nombre + extension);
+        if (fs.existsSync(destino)) {
+          existentes.push(nombre + extension);
+          continue;
+        }
+        try {
+          const contenido =
+            tipo.kind === "archivo"
+              ? columnasDe(tipo.element, tipos, [], tipo.pos)
+                  .map((c) => c.titulo)
+                  .join("\t") + "\n"
+              : "";
+          fs.mkdirSync(carpeta, { recursive: true });
+          fs.writeFileSync(destino, contenido, "utf8");
+          creados.push(nombre + extension);
+        } catch (err) {
+          problemas.push(`${nombre}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+    }
+  };
+  procesar(program.declarations);
+
+  if (creados.length === 0 && existentes.length === 0) {
+    void vscode.window.showInformationMessage(
+      "Este algoritmo no declara ningún ARCHIVO ni SECUENCIA, así que no necesita datos."
+    );
+    return;
+  }
+
+  const partes: string[] = [];
+  if (creados.length) partes.push(`creé ${creados.join(", ")}`);
+  if (existentes.length) partes.push(`ya estaban ${existentes.join(", ")}`);
+  if (problemas.length) partes.push(`no pude con ${problemas.join("; ")}`);
+
+  const accion = await vscode.window.showInformationMessage(
+    `Datos en ${path.basename(carpeta)}/: ${partes.join("; ")}.`,
+    "Abrir"
+  );
+  if (accion === "Abrir") {
+    const primero = creados[0] ?? existentes[0];
+    if (primero) {
+      const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(path.join(carpeta, primero)));
+      await vscode.window.showTextDocument(doc);
+    }
+  }
+}
+
 export function deactivate(): void {
   // nada que limpiar: la terminal se cierra sola
 }
@@ -144,6 +241,27 @@ function toVsDiagnostic(item: Diagnostic, uri?: vscode.Uri): vscode.Diagnostic {
     });
   }
   return diagnostic;
+}
+
+/** los datos viven en "<ejercicio>.datos/" al lado del algoritmo */
+function carpetaDeDatos(document: vscode.TextDocument): string | undefined {
+  if (document.uri.scheme !== "file") return undefined;
+  const ruta = document.uri.fsPath;
+  return path.join(path.dirname(ruta), path.basename(ruta, path.extname(ruta)) + ".datos");
+}
+
+function sistemaDeArchivos(carpeta: string): SistemaDeArchivos {
+  return {
+    ruta: (nombre, extension) => path.join(carpeta, nombre + extension),
+    leer: (nombre, extension) => {
+      const destino = path.join(carpeta, nombre + extension);
+      return fs.existsSync(destino) ? fs.readFileSync(destino, "utf8") : undefined;
+    },
+    escribir: (nombre, extension, contenido) => {
+      fs.mkdirSync(carpeta, { recursive: true });
+      fs.writeFileSync(path.join(carpeta, nombre + extension), contenido, "utf8");
+    },
+  };
 }
 
 /** una terminal por archivo: volver a ejecutar reemplaza la anterior, como hace Python */
@@ -186,7 +304,8 @@ async function runDocument(
   const key = document.uri.toString();
   terminales.get(key)?.dispose();
 
-  const pty = new PseudocodeTerminal(program);
+  const carpeta = carpetaDeDatos(document);
+  const pty = new PseudocodeTerminal(program, carpeta ? sistemaDeArchivos(carpeta) : undefined, carpeta);
   const terminal = vscode.window.createTerminal({ name: `AED: ${program.name}`, pty });
   terminales.set(key, terminal);
   terminal.show();
@@ -209,7 +328,11 @@ export class PseudocodeTerminal implements vscode.Pseudoterminal {
   private cancelled = false;
   private terminado = false;
 
-  constructor(private program: Program) {}
+  constructor(
+    private program: Program,
+    private archivos?: SistemaDeArchivos,
+    private carpetaDatos?: string
+  ) {}
 
   open(): void {
     // VS Code puede descartar lo que se escriba dentro de open(), antes de que la
@@ -312,11 +435,20 @@ export class PseudocodeTerminal implements vscode.Pseudoterminal {
           this.pendingRead = resolve;
         }),
       isCancelled: () => this.cancelled,
+      archivos: this.archivos,
     };
 
     const started = Date.now();
     try {
       await run(this.program, host);
+      if (this.carpetaDatos && fs.existsSync(this.carpetaDatos)) {
+        const generados = fs
+          .readdirSync(this.carpetaDatos)
+          .filter((f) => f.endsWith(".tsv") || f.endsWith(".txt"));
+        if (generados.length > 0) {
+          this.line(`${DIM}datos en ${path.basename(this.carpetaDatos)}/: ${generados.join(", ")}${RESET}`);
+        }
+      }
       this.line(`${DIM}\u2500\u2500 fin (${Date.now() - started} ms) \u2500\u2500${RESET}`);
     } catch (err) {
       if (err instanceof CancelledError) {

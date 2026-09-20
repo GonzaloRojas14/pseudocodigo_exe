@@ -1,0 +1,30 @@
+// Recorrido de una secuencia con ARR/AVZ y los barridos de blancos y de palabra.
+// La cinta está en palabras.datos/sec.txt: es una sola tira de caracteres,
+// donde el "." cierra cada oración y el "#" marca el fin.
+
+ACCION contar_palabras ES
+    Ambiente
+        sec : SECUENCIA de caracter
+        v : caracter
+        cant_pal, cant_ora : entero
+    Proceso
+        cant_pal := 0
+        cant_ora := 0
+        ARR(sec); AVZ(sec, v)
+        MIENTRAS (v <> "#") Y NFDS(sec) HACER
+            MIENTRAS (v <> ".") Y NFDS(sec) HACER
+                MIENTRAS (v = " ") HACER
+                    AVZ(sec, v)
+                FIN_MIENTRAS
+                cant_pal := cant_pal + 1
+                MIENTRAS (v <> " ") Y (v <> ".") Y NFDS(sec) HACER
+                    AVZ(sec, v)
+                FIN_MIENTRAS
+            FIN_MIENTRAS
+            cant_ora := cant_ora + 1
+            AVZ(sec, v)
+        FIN_MIENTRAS
+        ESCRIBIR("Oraciones: ", cant_ora)
+        ESCRIBIR("Palabras: ", cant_pal)
+        CERRAR(sec)
+FIN_ACCION

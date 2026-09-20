@@ -1,0 +1,70 @@
+// Corte de control sobre dos claves. Los datos están en corte_de_control.datos/arch.tsv:
+// abrilo, agregá filas y volvé a ejecutar. Tiene que estar ordenado por sucursal y rubro.
+
+ACCION corte_de_control ES
+    Ambiente
+        venta = REGISTRO
+            sucursal : AN(20)
+            rubro    : AN(20)
+            articulo : AN(20)
+            importe  : real
+        FIN_REGISTRO
+
+        arch : ARCHIVO de venta ordenado por sucursal y rubro
+        r : venta
+
+        resg_suc, resg_rubro : AN(20)
+        acum_rubro, acum_suc, acum_total : real
+
+        PROCEDIMIENTO inicializar ES
+            Proceso
+                acum_total := 0; acum_suc := 0; acum_rubro := 0
+                resg_suc := r.sucursal
+                resg_rubro := r.rubro
+        FIN_PROCEDIMIENTO
+
+        PROCEDIMIENTO tratar_registro ES
+            Proceso
+                acum_rubro := acum_rubro + r.importe
+        FIN_PROCEDIMIENTO
+
+        PROCEDIMIENTO corte_rubro ES
+            Proceso
+                ESCRIBIR("    Total rubro ", resg_rubro, ": ", acum_rubro)
+                acum_suc := acum_suc + acum_rubro
+                acum_rubro := 0
+                resg_rubro := r.rubro
+        FIN_PROCEDIMIENTO
+
+        PROCEDIMIENTO corte_sucursal ES
+            Proceso
+                corte_rubro
+                ESCRIBIR("Total sucursal ", resg_suc, ": ", acum_suc)
+                acum_total := acum_total + acum_suc
+                acum_suc := 0
+                resg_suc := r.sucursal
+        FIN_PROCEDIMIENTO
+
+        PROCEDIMIENTO tratar_corte ES
+            Proceso
+                SI (r.sucursal <> resg_suc) ENTONCES
+                    corte_sucursal
+                SINO
+                    SI (r.rubro <> resg_rubro) ENTONCES
+                        corte_rubro
+                    FIN_SI
+                FIN_SI
+        FIN_PROCEDIMIENTO
+    Proceso
+        ABRIR E/(arch)
+        LEER(arch, r)
+        inicializar
+        MIENTRAS NFDA(arch) HACER
+            tratar_corte
+            tratar_registro
+            LEER(arch, r)
+        FIN_MIENTRAS
+        corte_sucursal
+        ESCRIBIR("TOTAL GENERAL: ", acum_total)
+        CERRAR(arch)
+FIN_ACCION
