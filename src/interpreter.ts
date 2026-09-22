@@ -480,11 +480,13 @@ class Interpreter {
           }
           const encontrado = destino.buscarPorClave(buscado, stmt.pos);
           this.existe = encontrado !== undefined;
-          if (encontrado) slot.set(encontrado);
+          if (encontrado) {
+            slot.set(this.registroCompatible(encontrado, slot.type, destino, resto[0], stmt.pos));
+          }
           return;
         }
         const registro = destino.leer(stmt.pos);
-        if (registro) slot.set(registro);
+        if (registro) slot.set(this.registroCompatible(registro, slot.type, destino, resto[0], stmt.pos));
         return;
       }
 
@@ -511,6 +513,28 @@ class Interpreter {
       );
     }
     for (const arg of resto) destino.escribir(await this.eval(arg, env), stmt.pos);
+  }
+
+  /**
+   * El registro que se lee tiene que ser del mismo tipo que el del archivo. Si no,
+   * el error aparecería mucho después, al usar un campo que no está.
+   */
+  private registroCompatible(
+    registro: RecordVal,
+    tipoDestino: TypeNode | undefined,
+    archivo: ArchivoAbierto,
+    destino: Expr,
+    pos: Pos
+  ): RecordVal {
+    if (tipoDestino?.kind === "named" && registro.typeName.toLowerCase() !== tipoDestino.name.toLowerCase()) {
+      throw new RuntimeError(
+        `"${archivo.nombre}" está declarado ARCHIVO de ${registro.typeName}, pero "${describe(destino)}" ` +
+          `es de tipo ${tipoDestino.name}. El LEER necesita un registro del mismo tipo que el archivo: ` +
+          `revisá la declaración de "${archivo.nombre}" en el Ambiente.`,
+        pos
+      );
+    }
+    return registro;
   }
 
   private expectsText(type: TypeNode | undefined): boolean {

@@ -1157,3 +1157,110 @@ test("sumar muchos reales no ensucia la salida con ruido binario", async () => {
   `);
   assert.deepEqual(salida, ["0.3", "785960.39"]);
 });
+
+test("leer en un registro de otro tipo apunta a la declaración del archivo", async () => {
+  await assert.rejects(
+    execute(
+      `
+      ACCION tipos_cruzados ES
+          Ambiente
+              mae = REGISTRO
+                  clave : entero
+              FIN_REGISTRO
+              mov = REGISTRO
+                  clave   : entero
+                  TipoMov : ('A','B','M')
+              FIN_REGISTRO
+              movimientos : ARCHIVO de mae
+              reg_mov : mov
+          Proceso
+              ABRIR E/(movimientos)
+              LEER(movimientos, reg_mov)
+      FIN_ACCION
+    `,
+      [],
+      { "movimientos.tsv": "clave\n1\n" }
+    ),
+    /está declarado ARCHIVO de mae, pero "reg_mov" es de tipo mov/
+  );
+});
+
+test("baja lógica y baja física en una actualización por lotes", async () => {
+  const archivos: Record<string, string> = {
+    maestro: "",
+    "maestro.tsv": "clave\tstock\tBaja\n10\t50\t-\n20\t30\t-\n",
+    "movimientos.tsv": "clave\tTipoMov\n20\tB\n",
+  };
+  delete archivos.maestro;
+
+  await execute(
+    `
+    ACCION bajas ES
+        Ambiente
+            HV = 99999999
+            mae = REGISTRO
+                clave : entero
+                stock : entero
+                Baja  : caracter
+            FIN_REGISTRO
+            mov = REGISTRO
+                clave   : entero
+                TipoMov : ('A','B','M')
+            FIN_REGISTRO
+            reg_mae, aux_mae : mae
+            reg_mov : mov
+            maestro, logica, fisica : ARCHIVO de mae
+            movimientos : ARCHIVO de mov
+            dar_de_baja : logico
+
+            PROCEDIMIENTO leer_mae ES
+                Proceso
+                    LEER(maestro, reg_mae)
+                    SI FDA(maestro) ENTONCES
+                        reg_mae.clave := HV
+                    FIN_SI
+            FIN_PROCEDIMIENTO
+
+            PROCEDIMIENTO leer_mov ES
+                Proceso
+                    LEER(movimientos, reg_mov)
+                    SI FDA(movimientos) ENTONCES
+                        reg_mov.clave := HV
+                    FIN_SI
+            FIN_PROCEDIMIENTO
+        Proceso
+            ABRIR E/(maestro); ABRIR E/(movimientos)
+            ABRIR /S(logica); ABRIR /S(fisica)
+            leer_mae; leer_mov
+            MIENTRAS (reg_mae.clave <> HV) O (reg_mov.clave <> HV) HACER
+                SI (reg_mae.clave < reg_mov.clave) ENTONCES
+                    ESCRIBIR(logica, reg_mae); ESCRIBIR(fisica, reg_mae)
+                    leer_mae
+                SINO
+                    aux_mae := reg_mae
+                    dar_de_baja := falso
+                    MIENTRAS (aux_mae.clave = reg_mov.clave) HACER
+                        SI (reg_mov.TipoMov = 'B') ENTONCES
+                            aux_mae.Baja := '*'
+                            dar_de_baja := verdadero
+                        FIN_SI
+                        leer_mov
+                    FIN_MIENTRAS
+                    ESCRIBIR(logica, aux_mae)
+                    SI NO (dar_de_baja) ENTONCES
+                        ESCRIBIR(fisica, aux_mae)
+                    FIN_SI
+                    leer_mae
+                FIN_SI
+            FIN_MIENTRAS
+            CERRAR(maestro); CERRAR(movimientos); CERRAR(logica); CERRAR(fisica)
+    FIN_ACCION
+  `,
+    [],
+    archivos
+  );
+
+  // la lógica conserva los dos, uno marcado; la física deja solo el que no se dio de baja
+  assert.deepEqual(archivos["logica.tsv"].trim().split("\n").slice(1), ["10\t50\t-", "20\t30\t*"]);
+  assert.deepEqual(archivos["fisica.tsv"].trim().split("\n").slice(1), ["10\t50\t-"]);
+});

@@ -1,5 +1,9 @@
 # Cambios
 
+## 0.8.1
+
+- Leer un archivo dentro de un registro de otro tipo ahora apunta a la declaración del archivo, en vez de fallar mucho después con un campo que no existe.
+
 ## 0.8.0
 
 - Se verifica la precondición del corte de control: si el archivo está declarado `ordenado por ...` y los datos no lo están, se avisa con la fila exacta que rompe el orden, en vez de dejar que salgan totales partidos.
