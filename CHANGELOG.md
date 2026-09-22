@@ -1,5 +1,12 @@
 # Cambios
 
+## 0.8.0
+
+- Se verifica la precondición del corte de control: si el archivo está declarado `ordenado por ...` y los datos no lo están, se avisa con la fila exacta que rompe el orden, en vez de dejar que salgan totales partidos.
+- Los reales ya no muestran el ruido binario de sumar muchos valores (`785960.3900000001` → `785960.39`).
+- Ejemplo nuevo de 1000 registros: corte de control de tres niveles, con sus datos ordenados.
+- `npm run aed` para correr pseudocódigo desde la terminal, sin abrir VS Code.
+
 ## 0.7.0
 
 - **Los archivos indexados se ejecutan**: `SI EXISTE`, alta con `ESCRIBIR`, `RE-ESCRIBIR` y `ELIMINAR`, con el maestro persistiendo entre corridas.

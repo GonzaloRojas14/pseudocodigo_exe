@@ -1077,3 +1077,83 @@ test("actualización por lotes: varios movimientos por clave se graban una sola 
     "40\tMonitor\t9000\t*",
   ]);
 });
+
+test("si el archivo no viene ordenado como promete la declaración, se avisa", async () => {
+  const desordenado = [
+    "sucursal\trubro\timporte",
+    "Norte\tBebidas\t100",
+    "Sur\tBebidas\t200",
+    "Norte\tLacteos\t80", // vuelve a Norte: rompe el orden
+    "",
+  ].join("\n");
+
+  await assert.rejects(
+    execute(
+      `
+      ACCION corte_desordenado ES
+          Ambiente
+              venta = REGISTRO
+                  sucursal : AN(20)
+                  rubro    : AN(20)
+                  importe  : real
+              FIN_REGISTRO
+              arch : ARCHIVO de venta ordenado por sucursal y rubro
+              r : venta
+          Proceso
+              ABRIR E/(arch)
+              LEER(arch, r)
+              CERRAR(arch)
+      FIN_ACCION
+    `,
+      [],
+      { "arch.tsv": desordenado }
+    ),
+    /está declarado "ordenado por sucursal, rubro", pero los datos no lo están.*fila 4.*totales salen partidos/s
+  );
+});
+
+test("un archivo sin 'ordenado por' no se controla: puede venir en cualquier orden", async () => {
+  const salida = await execute(
+    `
+    ACCION sin_orden ES
+        Ambiente
+            venta = REGISTRO
+                sucursal : AN(20)
+                importe  : real
+            FIN_REGISTRO
+            arch : ARCHIVO de venta
+            r : venta
+            total : real
+        Proceso
+            total := 0
+            ABRIR E/(arch)
+            LEER(arch, r)
+            MIENTRAS NFDA(arch) HACER
+                total := total + r.importe
+                LEER(arch, r)
+            FIN_MIENTRAS
+            ESCRIBIR(total)
+            CERRAR(arch)
+    FIN_ACCION
+  `,
+    [],
+    { "arch.tsv": "sucursal\timporte\nSur\t200\nNorte\t100\n" }
+  );
+  assert.deepEqual(salida, ["300"]);
+});
+
+test("sumar muchos reales no ensucia la salida con ruido binario", async () => {
+  const salida = await execute(`
+    ACCION decimales ES
+        Ambiente
+            total : real
+        Proceso
+            total := 0
+            total := total + 0.1
+            total := total + 0.2
+            ESCRIBIR(total)
+            ESCRIBIR(785960.38 + 0.01)
+    FIN_ACCION
+  `);
+  assert.deepEqual(salida, ["0.3", "785960.39"]);
+});

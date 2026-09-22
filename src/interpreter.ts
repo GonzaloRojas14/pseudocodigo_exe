@@ -192,6 +192,7 @@ class Interpreter {
           registro ? (this.defaultValue(type.element) as RecordVal) : new RecordVal("", new Map())
         );
         archivo.indexadoPor = [...type.indexedBy];
+        archivo.ordenadoPor = [...type.orderedBy];
         return archivo;
       }
       case "secuencia": {

@@ -1,0 +1,1001 @@
+provincia	sucursal	rubro	nro_venta	cantidad	importe
+Chaco	Barranqueras	Almacen	1001	5	18220.95
+Chaco	Barranqueras	Almacen	1002	2	1582.12
+Chaco	Barranqueras	Almacen	1003	18	17694.9
+Chaco	Barranqueras	Almacen	1004	19	12602.51
+Chaco	Barranqueras	Almacen	1005	17	34851.36
+Chaco	Barranqueras	Almacen	1006	3	11963.28
+Chaco	Barranqueras	Almacen	1007	3	6839.61
+Chaco	Barranqueras	Almacen	1008	18	70325.82
+Chaco	Barranqueras	Almacen	1009	19	23667.35
+Chaco	Barranqueras	Almacen	1010	8	45848.32
+Chaco	Barranqueras	Almacen	1011	19	162207.18
+Chaco	Barranqueras	Almacen	1012	19	101308.76
+Chaco	Barranqueras	Almacen	1013	2	17579.72
+Chaco	Barranqueras	Almacen	1611	2	11715.56
+Chaco	Barranqueras	Almacen	1803	22	19460.76
+Chaco	Barranqueras	Almacen	1822	1	6201.29
+Chaco	Barranqueras	Almacen	1833	2	560.72
+Chaco	Barranqueras	Almacen	1853	11	27257.34
+Chaco	Barranqueras	Almacen	1911	8	6707.28
+Chaco	Barranqueras	Almacen	1944	20	132360.4
+Chaco	Barranqueras	Almacen	1958	12	57005.16
+Chaco	Barranqueras	Bebidas	1014	18	139454.1
+Chaco	Barranqueras	Bebidas	1015	10	38593.8
+Chaco	Barranqueras	Bebidas	1016	18	21464.28
+Chaco	Barranqueras	Bebidas	1017	10	51082.8
+Chaco	Barranqueras	Bebidas	1018	22	38487.46
+Chaco	Barranqueras	Bebidas	1019	19	98898.04
+Chaco	Barranqueras	Bebidas	1020	7	24120.04
+Chaco	Barranqueras	Bebidas	1021	18	116139.24
+Chaco	Barranqueras	Bebidas	1634	6	14725.56
+Chaco	Barranqueras	Bebidas	1731	3	11563.38
+Chaco	Barranqueras	Bebidas	1793	10	12790.0
+Chaco	Barranqueras	Bebidas	1828	23	177585.99
+Chaco	Barranqueras	Bebidas	1912	12	96180.72
+Chaco	Barranqueras	Lacteos	1022	2	11256.46
+Chaco	Barranqueras	Lacteos	1023	16	98744.64
+Chaco	Barranqueras	Lacteos	1024	14	98398.58
+Chaco	Barranqueras	Lacteos	1025	15	79983.3
+Chaco	Barranqueras	Lacteos	1026	15	50250.0
+Chaco	Barranqueras	Lacteos	1027	8	57442.08
+Chaco	Barranqueras	Lacteos	1028	23	162184.27
+Chaco	Barranqueras	Lacteos	1029	3	15700.95
+Chaco	Barranqueras	Lacteos	1030	17	77040.26
+Chaco	Barranqueras	Lacteos	1031	11	72661.49
+Chaco	Barranqueras	Lacteos	1032	10	55392.9
+Chaco	Barranqueras	Lacteos	1033	3	3584.64
+Chaco	Barranqueras	Lacteos	1034	14	22538.74
+Chaco	Barranqueras	Lacteos	1035	11	16445.66
+Chaco	Barranqueras	Lacteos	1036	16	62112.48
+Chaco	Barranqueras	Lacteos	1037	22	18412.68
+Chaco	Barranqueras	Lacteos	1038	18	93983.04
+Chaco	Barranqueras	Lacteos	1599	8	11775.04
+Chaco	Barranqueras	Lacteos	1641	14	120510.74
+Chaco	Barranqueras	Lacteos	1648	2	2749.72
+Chaco	Barranqueras	Lacteos	1705	5	12131.7
+Chaco	Barranqueras	Lacteos	1761	20	175959.8
+Chaco	Barranqueras	Lacteos	1778	20	11119.0
+Chaco	Barranqueras	Lacteos	1805	25	42226.25
+Chaco	Barranqueras	Lacteos	1811	11	3635.17
+Chaco	Barranqueras	Lacteos	1879	12	31594.2
+Chaco	Barranqueras	Limpieza	1039	11	69336.96
+Chaco	Barranqueras	Limpieza	1040	20	90911.4
+Chaco	Barranqueras	Limpieza	1041	15	11378.25
+Chaco	Barranqueras	Limpieza	1042	3	25531.29
+Chaco	Barranqueras	Limpieza	1043	16	101101.12
+Chaco	Barranqueras	Limpieza	1044	3	2060.76
+Chaco	Barranqueras	Limpieza	1045	23	66470.69
+Chaco	Barranqueras	Limpieza	1046	19	169839.1
+Chaco	Barranqueras	Limpieza	1047	15	40030.05
+Chaco	Barranqueras	Limpieza	1048	13	104004.03
+Chaco	Barranqueras	Limpieza	1049	12	4196.16
+Chaco	Barranqueras	Limpieza	1050	15	49437.9
+Chaco	Barranqueras	Limpieza	1051	20	23726.0
+Chaco	Barranqueras	Limpieza	1551	16	46936.8
+Chaco	Barranqueras	Limpieza	1560	22	166498.42
+Chaco	Barranqueras	Limpieza	1571	2	11564.94
+Chaco	Barranqueras	Limpieza	1589	21	162663.06
+Chaco	Barranqueras	Limpieza	1596	10	74054.5
+Chaco	Barranqueras	Limpieza	1601	5	22361.45
+Chaco	Barranqueras	Limpieza	1602	1	631.38
+Chaco	Barranqueras	Limpieza	1623	24	169903.68
+Chaco	Barranqueras	Limpieza	1649	23	17256.44
+Chaco	Barranqueras	Limpieza	1650	3	23190.03
+Chaco	Barranqueras	Limpieza	1655	3	22355.34
+Chaco	Barranqueras	Limpieza	1666	18	92879.28
+Chaco	Barranqueras	Limpieza	1686	11	52440.63
+Chaco	Barranqueras	Limpieza	1723	15	74072.4
+Chaco	Barranqueras	Limpieza	1738	7	30114.35
+Chaco	Barranqueras	Limpieza	1757	4	21078.44
+Chaco	Barranqueras	Limpieza	1769	2	8873.36
+Chaco	Barranqueras	Limpieza	1795	13	85093.97
+Chaco	Barranqueras	Limpieza	1798	7	51970.52
+Chaco	Barranqueras	Limpieza	1804	22	126660.16
+Chaco	Barranqueras	Limpieza	1814	4	27991.72
+Chaco	Barranqueras	Limpieza	1844	25	129158.25
+Chaco	Barranqueras	Limpieza	1856	10	75240.9
+Chaco	Barranqueras	Limpieza	1865	25	5823.0
+Chaco	Barranqueras	Limpieza	1883	9	35276.94
+Chaco	Barranqueras	Limpieza	1886	11	21216.25
+Chaco	Barranqueras	Limpieza	1889	15	66877.35
+Chaco	Barranqueras	Limpieza	1894	17	61694.7
+Chaco	Barranqueras	Limpieza	1897	9	76313.97
+Chaco	Barranqueras	Limpieza	1929	10	12048.2
+Chaco	Barranqueras	Limpieza	1952	16	15190.72
+Chaco	Barranqueras	Limpieza	1962	13	68254.68
+Chaco	Barranqueras	Limpieza	1966	5	1665.45
+Chaco	Barranqueras	Limpieza	1975	9	11150.91
+Chaco	Barranqueras	Panaderia	1052	7	48642.02
+Chaco	Barranqueras	Panaderia	1053	5	33422.6
+Chaco	Barranqueras	Panaderia	1054	13	46928.7
+Chaco	Barranqueras	Panaderia	1055	16	13810.24
+Chaco	Barranqueras	Panaderia	1056	15	55568.25
+Chaco	Barranqueras	Panaderia	1057	9	71711.55
+Chaco	Barranqueras	Panaderia	1058	14	109147.64
+Chaco	Barranqueras	Panaderia	1059	9	57614.49
+Chaco	Barranqueras	Panaderia	1670	1	3228.06
+Chaco	Barranqueras	Panaderia	1752	3	22430.73
+Chaco	Barranqueras	Panaderia	1813	16	82759.04
+Chaco	Barranqueras	Panaderia	1827	12	84001.2
+Chaco	Barranqueras	Panaderia	1863	22	80303.08
+Chaco	Barranqueras	Panaderia	1888	2	10165.64
+Chaco	Barranqueras	Panaderia	1919	6	38798.76
+Chaco	Barranqueras	Panaderia	1927	21	169492.68
+Chaco	Resistencia Centro	Almacen	1060	22	175452.42
+Chaco	Resistencia Centro	Almacen	1061	8	11885.2
+Chaco	Resistencia Centro	Almacen	1062	6	8933.94
+Chaco	Resistencia Centro	Almacen	1063	22	48730.44
+Chaco	Resistencia Centro	Almacen	1064	16	120082.88
+Chaco	Resistencia Centro	Almacen	1065	6	14851.86
+Chaco	Resistencia Centro	Almacen	1066	1	1439.24
+Chaco	Resistencia Centro	Almacen	1067	18	61522.02
+Chaco	Resistencia Centro	Almacen	1068	19	56424.49
+Chaco	Resistencia Centro	Almacen	1069	5	31304.35
+Chaco	Resistencia Centro	Almacen	1070	17	145511.16
+Chaco	Resistencia Centro	Almacen	1071	21	128821.77
+Chaco	Resistencia Centro	Almacen	1072	2	8382.6
+Chaco	Resistencia Centro	Almacen	1800	17	139432.81
+Chaco	Resistencia Centro	Almacen	1898	18	146798.28
+Chaco	Resistencia Centro	Almacen	1993	11	43806.51
+Chaco	Resistencia Centro	Bebidas	1073	22	158645.96
+Chaco	Resistencia Centro	Bebidas	1074	13	47747.96
+Chaco	Resistencia Centro	Bebidas	1075	13	13861.9
+Chaco	Resistencia Centro	Bebidas	1076	21	77572.32
+Chaco	Resistencia Centro	Bebidas	1077	7	5222.21
+Chaco	Resistencia Centro	Bebidas	1078	7	28346.85
+Chaco	Resistencia Centro	Bebidas	1079	4	12637.88
+Chaco	Resistencia Centro	Bebidas	1080	2	2112.12
+Chaco	Resistencia Centro	Bebidas	1081	19	28285.11
+Chaco	Resistencia Centro	Bebidas	1082	4	34192.8
+Chaco	Resistencia Centro	Bebidas	1083	20	7513.6
+Chaco	Resistencia Centro	Bebidas	1084	7	39091.57
+Chaco	Resistencia Centro	Bebidas	1085	5	28822.6
+Chaco	Resistencia Centro	Bebidas	1086	12	65762.04
+Chaco	Resistencia Centro	Bebidas	1087	16	19794.4
+Chaco	Resistencia Centro	Bebidas	1088	16	143023.36
+Chaco	Resistencia Centro	Bebidas	1089	15	66022.5
+Chaco	Resistencia Centro	Bebidas	1090	10	9100.8
+Chaco	Resistencia Centro	Bebidas	1091	4	27138.44
+Chaco	Resistencia Centro	Bebidas	1092	24	59834.4
+Chaco	Resistencia Centro	Bebidas	1572	24	70235.28
+Chaco	Resistencia Centro	Bebidas	1595	15	32788.8
+Chaco	Resistencia Centro	Bebidas	1626	24	142834.8
+Chaco	Resistencia Centro	Bebidas	1644	19	155999.31
+Chaco	Resistencia Centro	Bebidas	1750	22	177948.54
+Chaco	Resistencia Centro	Bebidas	1756	21	57602.58
+Chaco	Resistencia Centro	Bebidas	1830	18	115681.14
+Chaco	Resistencia Centro	Bebidas	1835	13	37737.7
+Chaco	Resistencia Centro	Bebidas	1878	5	14723.7
+Chaco	Resistencia Centro	Bebidas	1915	3	12459.45
+Chaco	Resistencia Centro	Bebidas	1947	7	37162.72
+Chaco	Resistencia Centro	Bebidas	1967	8	45030.8
+Chaco	Resistencia Centro	Lacteos	1093	6	28317.36
+Chaco	Resistencia Centro	Lacteos	1094	7	59963.54
+Chaco	Resistencia Centro	Lacteos	1095	17	56975.67
+Chaco	Resistencia Centro	Lacteos	1096	23	114012.84
+Chaco	Resistencia Centro	Lacteos	1097	1	6859.57
+Chaco	Resistencia Centro	Lacteos	1098	10	88097.4
+Chaco	Resistencia Centro	Lacteos	1099	3	18934.02
+Chaco	Resistencia Centro	Lacteos	1100	9	42640.29
+Chaco	Resistencia Centro	Lacteos	1101	6	19787.46
+Chaco	Resistencia Centro	Lacteos	1102	8	38907.52
+Chaco	Resistencia Centro	Lacteos	1103	25	114971.75
+Chaco	Resistencia Centro	Lacteos	1104	21	44602.32
+Chaco	Resistencia Centro	Lacteos	1105	25	192394.0
+Chaco	Resistencia Centro	Lacteos	1106	8	59138.0
+Chaco	Resistencia Centro	Lacteos	1107	24	174226.56
+Chaco	Resistencia Centro	Lacteos	1108	7	33117.7
+Chaco	Resistencia Centro	Lacteos	1109	12	79432.68
+Chaco	Resistencia Centro	Lacteos	1110	1	7142.51
+Chaco	Resistencia Centro	Lacteos	1111	16	39099.04
+Chaco	Resistencia Centro	Lacteos	1533	21	33571.65
+Chaco	Resistencia Centro	Lacteos	1541	13	68425.37
+Chaco	Resistencia Centro	Lacteos	1591	9	80438.85
+Chaco	Resistencia Centro	Lacteos	1609	3	17394.48
+Chaco	Resistencia Centro	Lacteos	1618	1	5571.86
+Chaco	Resistencia Centro	Lacteos	1646	20	167424.0
+Chaco	Resistencia Centro	Lacteos	1657	5	5080.4
+Chaco	Resistencia Centro	Lacteos	1665	12	51601.56
+Chaco	Resistencia Centro	Lacteos	1667	19	140701.27
+Chaco	Resistencia Centro	Lacteos	1671	16	100841.44
+Chaco	Resistencia Centro	Lacteos	1683	8	68029.52
+Chaco	Resistencia Centro	Lacteos	1697	6	52002.66
+Chaco	Resistencia Centro	Lacteos	1698	7	24853.22
+Chaco	Resistencia Centro	Lacteos	1748	10	29848.4
+Chaco	Resistencia Centro	Lacteos	1762	22	178849.88
+Chaco	Resistencia Centro	Lacteos	1780	17	75393.64
+Chaco	Resistencia Centro	Lacteos	1817	13	70273.97
+Chaco	Resistencia Centro	Lacteos	1829	25	22399.0
+Chaco	Resistencia Centro	Lacteos	1834	22	162436.78
+Chaco	Resistencia Centro	Lacteos	1840	4	13459.6
+Chaco	Resistencia Centro	Lacteos	1846	23	166683.99
+Chaco	Resistencia Centro	Lacteos	1858	18	111762.9
+Chaco	Resistencia Centro	Lacteos	1899	2	4864.88
+Chaco	Resistencia Centro	Lacteos	1901	16	10296.8
+Chaco	Resistencia Centro	Lacteos	1914	13	98850.83
+Chaco	Resistencia Centro	Lacteos	1945	9	15314.04
+Chaco	Resistencia Centro	Lacteos	1964	24	108696.24
+Chaco	Resistencia Centro	Lacteos	1997	2	908.42
+Chaco	Resistencia Centro	Lacteos	1998	20	50041.6
+Chaco	Resistencia Centro	Limpieza	1112	20	172303.2
+Chaco	Resistencia Centro	Limpieza	1113	15	109587.15
+Chaco	Resistencia Centro	Limpieza	1114	24	213459.36
+Chaco	Resistencia Centro	Limpieza	1115	12	10353.12
+Chaco	Resistencia Centro	Limpieza	1116	4	8630.36
+Chaco	Resistencia Centro	Limpieza	1117	7	21972.86
+Chaco	Resistencia Centro	Limpieza	1118	16	90767.84
+Chaco	Resistencia Centro	Limpieza	1119	20	151757.0
+Chaco	Resistencia Centro	Limpieza	1120	16	131142.56
+Chaco	Resistencia Centro	Limpieza	1121	12	86722.2
+Chaco	Resistencia Centro	Limpieza	1122	3	22609.92
+Chaco	Resistencia Centro	Limpieza	1123	4	32806.12
+Chaco	Resistencia Centro	Limpieza	1124	23	156141.02
+Chaco	Resistencia Centro	Limpieza	1125	16	128284.0
+Chaco	Resistencia Centro	Limpieza	1126	14	99873.9
+Chaco	Resistencia Centro	Limpieza	1127	11	10095.14
+Chaco	Resistencia Centro	Limpieza	1128	24	87676.08
+Chaco	Resistencia Centro	Limpieza	1129	13	87472.71
+Chaco	Resistencia Centro	Limpieza	1130	3	19693.41
+Chaco	Resistencia Centro	Limpieza	1549	13	58383.13
+Chaco	Resistencia Centro	Limpieza	1558	5	11682.35
+Chaco	Resistencia Centro	Limpieza	1561	13	70924.75
+Chaco	Resistencia Centro	Limpieza	1576	7	9203.67
+Chaco	Resistencia Centro	Limpieza	1612	12	64959.72
+Chaco	Resistencia Centro	Limpieza	1629	11	88415.47
+Chaco	Resistencia Centro	Limpieza	1684	18	97338.24
+Chaco	Resistencia Centro	Limpieza	1709	24	142187.76
+Chaco	Resistencia Centro	Limpieza	1712	15	59668.2
+Chaco	Resistencia Centro	Limpieza	1728	24	212700.96
+Chaco	Resistencia Centro	Limpieza	1739	24	51599.52
+Chaco	Resistencia Centro	Limpieza	1792	11	20371.23
+Chaco	Resistencia Centro	Limpieza	1823	3	6244.41
+Chaco	Resistencia Centro	Limpieza	1824	5	21650.7
+Chaco	Resistencia Centro	Limpieza	1926	5	44054.0
+Chaco	Resistencia Centro	Limpieza	1950	2	9476.72
+Chaco	Resistencia Centro	Panaderia	1131	5	1969.05
+Chaco	Resistencia Centro	Panaderia	1132	19	155000.86
+Chaco	Resistencia Centro	Panaderia	1133	21	30316.44
+Chaco	Resistencia Centro	Panaderia	1134	20	176514.2
+Chaco	Resistencia Centro	Panaderia	1135	22	185824.98
+Chaco	Resistencia Centro	Panaderia	1136	5	25028.2
+Chaco	Resistencia Centro	Panaderia	1137	5	1696.8
+Chaco	Resistencia Centro	Panaderia	1138	24	141590.88
+Chaco	Resistencia Centro	Panaderia	1139	17	115311.68
+Chaco	Resistencia Centro	Panaderia	1140	5	19946.05
+Chaco	Resistencia Centro	Panaderia	1543	1	607.5
+Chaco	Resistencia Centro	Panaderia	1575	1	7735.07
+Chaco	Resistencia Centro	Panaderia	1606	7	23738.26
+Chaco	Resistencia Centro	Panaderia	1677	4	22828.8
+Chaco	Resistencia Centro	Panaderia	1718	6	48397.68
+Chaco	Resistencia Centro	Panaderia	1737	25	18993.0
+Chaco	Saenz Peña	Almacen	1141	7	2784.18
+Chaco	Saenz Peña	Almacen	1142	7	19199.25
+Chaco	Saenz Peña	Almacen	1143	8	55268.56
+Chaco	Saenz Peña	Almacen	1144	11	26899.18
+Chaco	Saenz Peña	Almacen	1145	14	105456.82
+Chaco	Saenz Peña	Almacen	1146	2	16407.3
+Chaco	Saenz Peña	Almacen	1147	12	97136.16
+Chaco	Saenz Peña	Almacen	1148	22	116878.08
+Chaco	Saenz Peña	Almacen	1149	17	65833.52
+Chaco	Saenz Peña	Almacen	1150	17	22223.25
+Chaco	Saenz Peña	Almacen	1151	5	23915.15
+Chaco	Saenz Peña	Almacen	1544	21	153032.04
+Chaco	Saenz Peña	Almacen	1547	12	31885.92
+Chaco	Saenz Peña	Almacen	1640	23	4749.04
+Chaco	Saenz Peña	Almacen	1645	2	776.18
+Chaco	Saenz Peña	Almacen	1652	22	16140.08
+Chaco	Saenz Peña	Almacen	1676	25	21645.25
+Chaco	Saenz Peña	Almacen	1715	6	14178.24
+Chaco	Saenz Peña	Almacen	1740	12	72533.16
+Chaco	Saenz Peña	Almacen	1747	9	29862.9
+Chaco	Saenz Peña	Almacen	1765	3	20147.76
+Chaco	Saenz Peña	Almacen	1770	23	103468.72
+Chaco	Saenz Peña	Almacen	1809	10	51246.0
+Chaco	Saenz Peña	Almacen	1818	5	21788.6
+Chaco	Saenz Peña	Almacen	1836	20	32381.4
+Chaco	Saenz Peña	Almacen	1855	25	200095.0
+Chaco	Saenz Peña	Almacen	1862	8	23110.48
+Chaco	Saenz Peña	Almacen	1902	11	75144.41
+Chaco	Saenz Peña	Almacen	1913	25	102703.0
+Chaco	Saenz Peña	Almacen	1918	11	23227.71
+Chaco	Saenz Peña	Almacen	1941	6	28599.78
+Chaco	Saenz Peña	Almacen	1946	20	121572.2
+Chaco	Saenz Peña	Almacen	1995	14	122245.34
+Chaco	Saenz Peña	Bebidas	1152	15	105331.2
+Chaco	Saenz Peña	Bebidas	1153	20	3696.0
+Chaco	Saenz Peña	Bebidas	1154	5	8376.35
+Chaco	Saenz Peña	Bebidas	1155	16	90064.8
+Chaco	Saenz Peña	Bebidas	1156	4	20299.24
+Chaco	Saenz Peña	Bebidas	1157	11	68074.93
+Chaco	Saenz Peña	Bebidas	1158	17	86116.22
+Chaco	Saenz Peña	Bebidas	1159	25	27226.75
+Chaco	Saenz Peña	Bebidas	1699	10	66396.4
+Chaco	Saenz Peña	Bebidas	1751	10	77118.4
+Chaco	Saenz Peña	Bebidas	1821	21	6036.24
+Chaco	Saenz Peña	Bebidas	1921	9	34664.67
+Chaco	Saenz Peña	Bebidas	1949	17	63952.13
+Chaco	Saenz Peña	Bebidas	1970	23	153822.39
+Chaco	Saenz Peña	Lacteos	1160	2	4698.34
+Chaco	Saenz Peña	Lacteos	1161	9	4711.14
+Chaco	Saenz Peña	Lacteos	1162	4	18573.08
+Chaco	Saenz Peña	Lacteos	1163	18	7138.98
+Chaco	Saenz Peña	Lacteos	1164	3	12218.25
+Chaco	Saenz Peña	Lacteos	1165	20	175284.8
+Chaco	Saenz Peña	Lacteos	1166	20	93652.6
+Chaco	Saenz Peña	Lacteos	1167	23	59871.07
+Chaco	Saenz Peña	Lacteos	1168	17	82782.86
+Chaco	Saenz Peña	Lacteos	1169	16	74297.6
+Chaco	Saenz Peña	Lacteos	1170	8	50704.64
+Chaco	Saenz Peña	Lacteos	1171	9	74849.76
+Chaco	Saenz Peña	Lacteos	1172	7	53088.0
+Chaco	Saenz Peña	Lacteos	1173	5	19186.2
+Chaco	Saenz Peña	Lacteos	1174	13	52815.75
+Chaco	Saenz Peña	Lacteos	1175	3	18269.19
+Chaco	Saenz Peña	Lacteos	1553	21	149195.76
+Chaco	Saenz Peña	Lacteos	1578	22	156797.96
+Chaco	Saenz Peña	Lacteos	1615	1	539.42
+Chaco	Saenz Peña	Lacteos	1636	24	197937.12
+Chaco	Saenz Peña	Lacteos	1668	14	2261.0
+Chaco	Saenz Peña	Lacteos	1674	10	73648.8
+Chaco	Saenz Peña	Lacteos	1755	1	2006.28
+Chaco	Saenz Peña	Lacteos	1779	11	80367.21
+Chaco	Saenz Peña	Lacteos	1847	11	86301.49
+Chaco	Saenz Peña	Lacteos	1860	18	79922.7
+Chaco	Saenz Peña	Lacteos	1924	9	40458.69
+Chaco	Saenz Peña	Lacteos	1968	4	11641.72
+Chaco	Saenz Peña	Lacteos	1981	1	8447.59
+Chaco	Saenz Peña	Lacteos	1983	20	96034.0
+Chaco	Saenz Peña	Lacteos	1987	11	80994.43
+Chaco	Saenz Peña	Limpieza	1176	3	6096.9
+Chaco	Saenz Peña	Limpieza	1177	10	70878.3
+Chaco	Saenz Peña	Limpieza	1178	25	37921.25
+Chaco	Saenz Peña	Limpieza	1179	23	134425.8
+Chaco	Saenz Peña	Limpieza	1180	12	16984.32
+Chaco	Saenz Peña	Limpieza	1181	5	43563.85
+Chaco	Saenz Peña	Limpieza	1182	8	54065.12
+Chaco	Saenz Peña	Limpieza	1183	4	14698.28
+Chaco	Saenz Peña	Limpieza	1184	16	25451.84
+Chaco	Saenz Peña	Limpieza	1185	22	165377.08
+Chaco	Saenz Peña	Limpieza	1186	6	38405.76
+Chaco	Saenz Peña	Limpieza	1187	17	63303.24
+Chaco	Saenz Peña	Limpieza	1188	14	26352.76
+Chaco	Saenz Peña	Limpieza	1189	11	10625.12
+Chaco	Saenz Peña	Limpieza	1565	1	181.05
+Chaco	Saenz Peña	Limpieza	1585	13	20499.44
+Chaco	Saenz Peña	Limpieza	1627	8	71760.0
+Chaco	Saenz Peña	Limpieza	1672	16	86305.76
+Chaco	Saenz Peña	Limpieza	1727	13	61061.78
+Chaco	Saenz Peña	Limpieza	1801	13	72901.27
+Chaco	Saenz Peña	Limpieza	1808	1	3414.49
+Chaco	Saenz Peña	Limpieza	1887	13	11574.68
+Chaco	Saenz Peña	Limpieza	1923	10	31104.0
+Chaco	Saenz Peña	Panaderia	1190	1	3141.12
+Chaco	Saenz Peña	Panaderia	1191	15	60720.75
+Chaco	Saenz Peña	Panaderia	1192	1	3551.45
+Chaco	Saenz Peña	Panaderia	1193	17	96419.75
+Chaco	Saenz Peña	Panaderia	1194	17	147098.62
+Chaco	Saenz Peña	Panaderia	1195	4	35471.96
+Chaco	Saenz Peña	Panaderia	1196	8	69996.08
+Chaco	Saenz Peña	Panaderia	1197	4	3575.76
+Chaco	Saenz Peña	Panaderia	1198	9	4503.24
+Chaco	Saenz Peña	Panaderia	1199	25	43918.25
+Chaco	Saenz Peña	Panaderia	1200	25	32414.25
+Chaco	Saenz Peña	Panaderia	1201	14	107363.9
+Chaco	Saenz Peña	Panaderia	1202	22	162755.12
+Chaco	Saenz Peña	Panaderia	1555	16	28308.0
+Chaco	Saenz Peña	Panaderia	1559	2	15944.36
+Chaco	Saenz Peña	Panaderia	1619	5	19033.15
+Chaco	Saenz Peña	Panaderia	1637	13	39750.1
+Chaco	Saenz Peña	Panaderia	1682	17	28292.76
+Chaco	Saenz Peña	Panaderia	1717	14	66311.42
+Chaco	Saenz Peña	Panaderia	1910	2	3078.12
+Chaco	Saenz Peña	Panaderia	1955	19	142687.34
+Corrientes	Corrientes Centro	Almacen	1203	13	19134.83
+Corrientes	Corrientes Centro	Almacen	1204	17	88396.09
+Corrientes	Corrientes Centro	Almacen	1205	23	70020.74
+Corrientes	Corrientes Centro	Almacen	1206	9	5931.99
+Corrientes	Corrientes Centro	Almacen	1207	23	40769.57
+Corrientes	Corrientes Centro	Almacen	1208	3	7589.91
+Corrientes	Corrientes Centro	Almacen	1209	1	5764.79
+Corrientes	Corrientes Centro	Almacen	1210	9	8020.08
+Corrientes	Corrientes Centro	Almacen	1211	8	5916.88
+Corrientes	Corrientes Centro	Almacen	1212	4	16663.6
+Corrientes	Corrientes Centro	Almacen	1213	11	98445.71
+Corrientes	Corrientes Centro	Almacen	1214	14	116914.28
+Corrientes	Corrientes Centro	Almacen	1550	10	12708.6
+Corrientes	Corrientes Centro	Almacen	1639	16	69255.04
+Corrientes	Corrientes Centro	Almacen	1654	4	1798.68
+Corrientes	Corrientes Centro	Almacen	1658	10	29743.8
+Corrientes	Corrientes Centro	Almacen	1669	10	68953.0
+Corrientes	Corrientes Centro	Almacen	1701	4	10540.48
+Corrientes	Corrientes Centro	Almacen	1710	23	122274.67
+Corrientes	Corrientes Centro	Almacen	1722	17	54937.88
+Corrientes	Corrientes Centro	Almacen	1764	16	100499.52
+Corrientes	Corrientes Centro	Almacen	1791	21	94624.11
+Corrientes	Corrientes Centro	Almacen	1867	12	83804.04
+Corrientes	Corrientes Centro	Almacen	1881	19	84623.91
+Corrientes	Corrientes Centro	Almacen	1903	22	148979.16
+Corrientes	Corrientes Centro	Almacen	1905	4	17263.68
+Corrientes	Corrientes Centro	Almacen	1948	1	731.4
+Corrientes	Corrientes Centro	Bebidas	1215	20	25872.8
+Corrientes	Corrientes Centro	Bebidas	1216	17	109299.8
+Corrientes	Corrientes Centro	Bebidas	1217	4	34910.12
+Corrientes	Corrientes Centro	Bebidas	1218	9	5362.74
+Corrientes	Corrientes Centro	Bebidas	1219	7	58802.66
+Corrientes	Corrientes Centro	Bebidas	1220	21	59835.3
+Corrientes	Corrientes Centro	Bebidas	1221	25	49299.0
+Corrientes	Corrientes Centro	Bebidas	1222	15	68636.7
+Corrientes	Corrientes Centro	Bebidas	1223	6	15264.72
+Corrientes	Corrientes Centro	Bebidas	1224	1	8951.32
+Corrientes	Corrientes Centro	Bebidas	1225	2	571.62
+Corrientes	Corrientes Centro	Bebidas	1226	24	111000.96
+Corrientes	Corrientes Centro	Bebidas	1556	2	7375.5
+Corrientes	Corrientes Centro	Bebidas	1633	3	23815.2
+Corrientes	Corrientes Centro	Bebidas	1643	13	73582.73
+Corrientes	Corrientes Centro	Bebidas	1693	5	32757.6
+Corrientes	Corrientes Centro	Bebidas	1776	3	5242.77
+Corrientes	Corrientes Centro	Bebidas	1781	5	2249.95
+Corrientes	Corrientes Centro	Bebidas	1786	10	40014.3
+Corrientes	Corrientes Centro	Bebidas	1871	7	6761.09
+Corrientes	Corrientes Centro	Bebidas	1940	9	46857.24
+Corrientes	Corrientes Centro	Bebidas	2000	2	11296.26
+Corrientes	Corrientes Centro	Lacteos	1227	17	73977.71
+Corrientes	Corrientes Centro	Lacteos	1228	15	16358.85
+Corrientes	Corrientes Centro	Lacteos	1229	21	83470.17
+Corrientes	Corrientes Centro	Lacteos	1230	16	79700.32
+Corrientes	Corrientes Centro	Lacteos	1231	13	113584.38
+Corrientes	Corrientes Centro	Lacteos	1232	10	62365.1
+Corrientes	Corrientes Centro	Lacteos	1233	8	25463.52
+Corrientes	Corrientes Centro	Lacteos	1234	23	151806.21
+Corrientes	Corrientes Centro	Lacteos	1235	5	18657.85
+Corrientes	Corrientes Centro	Lacteos	1236	12	106075.92
+Corrientes	Corrientes Centro	Lacteos	1237	5	1380.8
+Corrientes	Corrientes Centro	Lacteos	1554	20	74593.8
+Corrientes	Corrientes Centro	Lacteos	1579	3	22567.11
+Corrientes	Corrientes Centro	Lacteos	1711	22	38639.04
+Corrientes	Corrientes Centro	Lacteos	1734	10	67120.2
+Corrientes	Corrientes Centro	Lacteos	1744	9	57439.53
+Corrientes	Corrientes Centro	Lacteos	1848	1	7506.9
+Corrientes	Corrientes Centro	Lacteos	1893	8	46556.8
+Corrientes	Corrientes Centro	Lacteos	1934	10	14275.1
+Corrientes	Corrientes Centro	Lacteos	1942	23	39198.9
+Corrientes	Corrientes Centro	Lacteos	1954	22	55140.8
+Corrientes	Corrientes Centro	Lacteos	1979	8	11623.2
+Corrientes	Corrientes Centro	Limpieza	1238	24	190481.04
+Corrientes	Corrientes Centro	Limpieza	1239	14	22326.22
+Corrientes	Corrientes Centro	Limpieza	1240	3	18111.78
+Corrientes	Corrientes Centro	Limpieza	1241	13	102105.38
+Corrientes	Corrientes Centro	Limpieza	1242	22	192340.06
+Corrientes	Corrientes Centro	Limpieza	1243	20	45871.6
+Corrientes	Corrientes Centro	Limpieza	1244	10	5503.5
+Corrientes	Corrientes Centro	Limpieza	1245	6	9265.02
+Corrientes	Corrientes Centro	Limpieza	1246	15	2730.9
+Corrientes	Corrientes Centro	Limpieza	1247	12	103941.72
+Corrientes	Corrientes Centro	Limpieza	1248	18	54238.86
+Corrientes	Corrientes Centro	Limpieza	1249	2	17392.3
+Corrientes	Corrientes Centro	Limpieza	1250	10	20781.1
+Corrientes	Corrientes Centro	Limpieza	1251	6	956.76
+Corrientes	Corrientes Centro	Limpieza	1252	13	11601.59
+Corrientes	Corrientes Centro	Limpieza	1253	9	41395.14
+Corrientes	Corrientes Centro	Limpieza	1254	7	16424.73
+Corrientes	Corrientes Centro	Limpieza	1255	25	4845.25
+Corrientes	Corrientes Centro	Limpieza	1608	23	33842.66
+Corrientes	Corrientes Centro	Limpieza	1617	6	3999.96
+Corrientes	Corrientes Centro	Limpieza	1635	24	46669.68
+Corrientes	Corrientes Centro	Limpieza	1638	13	106365.74
+Corrientes	Corrientes Centro	Limpieza	1642	19	151622.09
+Corrientes	Corrientes Centro	Limpieza	1662	17	74176.61
+Corrientes	Corrientes Centro	Limpieza	1675	16	25876.0
+Corrientes	Corrientes Centro	Limpieza	1680	1	3441.76
+Corrientes	Corrientes Centro	Limpieza	1691	17	31372.31
+Corrientes	Corrientes Centro	Limpieza	1694	24	72961.92
+Corrientes	Corrientes Centro	Limpieza	1758	6	42121.8
+Corrientes	Corrientes Centro	Limpieza	1768	5	21690.95
+Corrientes	Corrientes Centro	Limpieza	1802	22	138889.74
+Corrientes	Corrientes Centro	Limpieza	1806	6	47054.82
+Corrientes	Corrientes Centro	Limpieza	1843	15	127688.4
+Corrientes	Corrientes Centro	Limpieza	1850	13	46515.43
+Corrientes	Corrientes Centro	Limpieza	1852	15	39859.35
+Corrientes	Corrientes Centro	Limpieza	1868	13	68631.94
+Corrientes	Corrientes Centro	Limpieza	1875	2	16630.34
+Corrientes	Corrientes Centro	Limpieza	1896	24	50693.76
+Corrientes	Corrientes Centro	Limpieza	1909	1	4290.9
+Corrientes	Corrientes Centro	Limpieza	1922	5	1874.85
+Corrientes	Corrientes Centro	Limpieza	1932	4	14411.16
+Corrientes	Corrientes Centro	Limpieza	1961	11	77497.75
+Corrientes	Corrientes Centro	Limpieza	1973	23	93869.44
+Corrientes	Corrientes Centro	Limpieza	1988	18	11231.1
+Corrientes	Corrientes Centro	Panaderia	1256	3	4269.63
+Corrientes	Corrientes Centro	Panaderia	1257	19	9856.25
+Corrientes	Corrientes Centro	Panaderia	1258	1	2801.87
+Corrientes	Corrientes Centro	Panaderia	1259	21	46417.56
+Corrientes	Corrientes Centro	Panaderia	1260	19	163876.71
+Corrientes	Corrientes Centro	Panaderia	1261	25	38099.5
+Corrientes	Corrientes Centro	Panaderia	1262	23	163041.48
+Corrientes	Corrientes Centro	Panaderia	1263	20	71944.4
+Corrientes	Corrientes Centro	Panaderia	1264	11	71807.89
+Corrientes	Corrientes Centro	Panaderia	1265	16	23564.0
+Corrientes	Corrientes Centro	Panaderia	1266	24	135013.44
+Corrientes	Corrientes Centro	Panaderia	1267	5	2687.6
+Corrientes	Corrientes Centro	Panaderia	1563	14	50323.42
+Corrientes	Corrientes Centro	Panaderia	1580	6	18095.88
+Corrientes	Corrientes Centro	Panaderia	1597	10	58072.5
+Corrientes	Corrientes Centro	Panaderia	1660	10	5784.1
+Corrientes	Corrientes Centro	Panaderia	1689	19	41696.83
+Corrientes	Corrientes Centro	Panaderia	1713	21	133365.75
+Corrientes	Corrientes Centro	Panaderia	1810	10	17852.7
+Corrientes	Corrientes Centro	Panaderia	1812	21	110623.17
+Corrientes	Corrientes Centro	Panaderia	1820	16	32458.4
+Corrientes	Corrientes Centro	Panaderia	1832	2	12994.62
+Corrientes	Corrientes Centro	Panaderia	1857	19	27567.86
+Corrientes	Corrientes Centro	Panaderia	1869	17	50843.43
+Corrientes	Goya	Almacen	1268	17	96932.13
+Corrientes	Goya	Almacen	1269	24	152503.68
+Corrientes	Goya	Almacen	1270	17	23508.79
+Corrientes	Goya	Almacen	1271	17	115818.79
+Corrientes	Goya	Almacen	1272	19	143244.8
+Corrientes	Goya	Almacen	1273	1	7463.72
+Corrientes	Goya	Almacen	1274	19	137028.19
+Corrientes	Goya	Almacen	1275	23	142453.26
+Corrientes	Goya	Almacen	1276	23	134310.11
+Corrientes	Goya	Almacen	1277	3	1277.31
+Corrientes	Goya	Almacen	1278	5	28942.55
+Corrientes	Goya	Almacen	1279	4	13932.28
+Corrientes	Goya	Almacen	1280	15	76394.55
+Corrientes	Goya	Almacen	1281	21	6651.54
+Corrientes	Goya	Almacen	1282	18	111129.84
+Corrientes	Goya	Almacen	1283	16	39753.12
+Corrientes	Goya	Almacen	1284	15	108144.3
+Corrientes	Goya	Almacen	1285	24	201664.08
+Corrientes	Goya	Almacen	1286	18	17346.42
+Corrientes	Goya	Almacen	1534	14	124542.74
+Corrientes	Goya	Almacen	1548	6	50044.02
+Corrientes	Goya	Almacen	1581	15	21309.15
+Corrientes	Goya	Almacen	1583	20	92563.2
+Corrientes	Goya	Almacen	1586	22	67127.5
+Corrientes	Goya	Almacen	1588	4	27796.6
+Corrientes	Goya	Almacen	1593	13	115906.83
+Corrientes	Goya	Almacen	1603	12	34057.08
+Corrientes	Goya	Almacen	1610	13	95321.2
+Corrientes	Goya	Almacen	1613	15	82149.75
+Corrientes	Goya	Almacen	1628	8	46796.56
+Corrientes	Goya	Almacen	1630	23	14143.16
+Corrientes	Goya	Almacen	1730	13	47933.6
+Corrientes	Goya	Almacen	1790	17	54426.69
+Corrientes	Goya	Almacen	1825	24	124453.44
+Corrientes	Goya	Almacen	1882	7	17255.91
+Corrientes	Goya	Almacen	1971	1	7560.39
+Corrientes	Goya	Bebidas	1287	3	20249.07
+Corrientes	Goya	Bebidas	1288	16	38110.56
+Corrientes	Goya	Bebidas	1289	3	22914.84
+Corrientes	Goya	Bebidas	1290	8	52836.96
+Corrientes	Goya	Bebidas	1291	7	15344.07
+Corrientes	Goya	Bebidas	1292	21	184490.46
+Corrientes	Goya	Bebidas	1293	16	122127.2
+Corrientes	Goya	Bebidas	1294	3	13167.72
+Corrientes	Goya	Bebidas	1295	22	59240.94
+Corrientes	Goya	Bebidas	1296	2	11220.44
+Corrientes	Goya	Bebidas	1297	21	40002.27
+Corrientes	Goya	Bebidas	1298	20	29094.2
+Corrientes	Goya	Bebidas	1299	9	53244.72
+Corrientes	Goya	Bebidas	1300	23	65414.07
+Corrientes	Goya	Bebidas	1301	19	25288.05
+Corrientes	Goya	Bebidas	1302	16	10989.6
+Corrientes	Goya	Bebidas	1663	20	134981.0
+Corrientes	Goya	Bebidas	1708	14	106918.56
+Corrientes	Goya	Bebidas	1788	10	32933.3
+Corrientes	Goya	Bebidas	1845	9	6179.76
+Corrientes	Goya	Bebidas	1977	4	4920.12
+Corrientes	Goya	Lacteos	1303	22	22676.28
+Corrientes	Goya	Lacteos	1304	7	42910.07
+Corrientes	Goya	Lacteos	1305	10	64235.1
+Corrientes	Goya	Lacteos	1306	10	42622.7
+Corrientes	Goya	Lacteos	1307	15	104091.75
+Corrientes	Goya	Lacteos	1308	18	34440.48
+Corrientes	Goya	Lacteos	1309	3	25307.55
+Corrientes	Goya	Lacteos	1310	1	2712.86
+Corrientes	Goya	Lacteos	1311	3	22218.27
+Corrientes	Goya	Lacteos	1312	15	134199.15
+Corrientes	Goya	Lacteos	1313	13	26091.78
+Corrientes	Goya	Lacteos	1314	7	5672.24
+Corrientes	Goya	Lacteos	1562	21	81220.44
+Corrientes	Goya	Lacteos	1681	9	35445.06
+Corrientes	Goya	Lacteos	1692	25	159325.5
+Corrientes	Goya	Lacteos	1742	21	26412.12
+Corrientes	Goya	Lacteos	1763	21	159041.61
+Corrientes	Goya	Limpieza	1315	5	33826.25
+Corrientes	Goya	Limpieza	1316	9	77235.75
+Corrientes	Goya	Limpieza	1317	5	27448.95
+Corrientes	Goya	Limpieza	1318	21	97700.19
+Corrientes	Goya	Limpieza	1319	4	25498.12
+Corrientes	Goya	Limpieza	1320	8	36450.48
+Corrientes	Goya	Limpieza	1321	16	58201.76
+Corrientes	Goya	Limpieza	1322	6	1090.68
+Corrientes	Goya	Limpieza	1323	16	98912.8
+Corrientes	Goya	Limpieza	1535	14	120200.08
+Corrientes	Goya	Limpieza	1536	24	123928.8
+Corrientes	Goya	Limpieza	1598	24	3980.4
+Corrientes	Goya	Limpieza	1604	12	58522.8
+Corrientes	Goya	Limpieza	1622	3	8422.08
+Corrientes	Goya	Limpieza	1632	9	24895.89
+Corrientes	Goya	Limpieza	1695	12	18890.16
+Corrientes	Goya	Limpieza	1880	1	982.65
+Corrientes	Goya	Limpieza	1904	19	77051.27
+Corrientes	Goya	Limpieza	1999	20	51397.6
+Corrientes	Goya	Panaderia	1324	10	65855.7
+Corrientes	Goya	Panaderia	1325	14	44716.7
+Corrientes	Goya	Panaderia	1326	11	13420.55
+Corrientes	Goya	Panaderia	1327	11	1819.51
+Corrientes	Goya	Panaderia	1328	25	78592.75
+Corrientes	Goya	Panaderia	1329	13	15760.81
+Corrientes	Goya	Panaderia	1330	7	45221.82
+Corrientes	Goya	Panaderia	1331	24	65160.48
+Corrientes	Goya	Panaderia	1332	12	8700.6
+Corrientes	Goya	Panaderia	1333	13	116861.03
+Corrientes	Goya	Panaderia	1334	19	15696.85
+Corrientes	Goya	Panaderia	1335	14	95725.84
+Corrientes	Goya	Panaderia	1336	2	5267.28
+Corrientes	Goya	Panaderia	1337	2	15073.76
+Corrientes	Goya	Panaderia	1584	12	5711.64
+Corrientes	Goya	Panaderia	1688	6	25493.64
+Corrientes	Goya	Panaderia	1696	7	17075.73
+Corrientes	Goya	Panaderia	1719	25	6102.25
+Corrientes	Goya	Panaderia	1746	6	26471.34
+Corrientes	Goya	Panaderia	1753	5	24231.15
+Corrientes	Goya	Panaderia	1772	1	1569.16
+Corrientes	Goya	Panaderia	1773	15	94628.85
+Corrientes	Goya	Panaderia	1925	15	122145.6
+Corrientes	Goya	Panaderia	1930	7	61184.9
+Formosa	Clorinda	Almacen	1338	21	177029.37
+Formosa	Clorinda	Almacen	1339	8	69949.52
+Formosa	Clorinda	Almacen	1340	14	65408.28
+Formosa	Clorinda	Almacen	1341	7	48948.76
+Formosa	Clorinda	Almacen	1342	14	111660.64
+Formosa	Clorinda	Almacen	1343	25	143335.75
+Formosa	Clorinda	Almacen	1344	18	90192.06
+Formosa	Clorinda	Almacen	1345	24	20714.64
+Formosa	Clorinda	Almacen	1346	24	90872.16
+Formosa	Clorinda	Almacen	1347	20	136222.2
+Formosa	Clorinda	Almacen	1348	21	164742.69
+Formosa	Clorinda	Almacen	1349	16	9335.2
+Formosa	Clorinda	Almacen	1690	15	87568.5
+Formosa	Clorinda	Almacen	1783	4	31103.84
+Formosa	Clorinda	Almacen	1916	11	81774.99
+Formosa	Clorinda	Almacen	1985	13	29605.42
+Formosa	Clorinda	Almacen	1986	23	92112.7
+Formosa	Clorinda	Bebidas	1350	5	8306.25
+Formosa	Clorinda	Bebidas	1351	14	44679.88
+Formosa	Clorinda	Bebidas	1352	10	24133.2
+Formosa	Clorinda	Bebidas	1353	24	210965.28
+Formosa	Clorinda	Bebidas	1354	9	33704.55
+Formosa	Clorinda	Bebidas	1355	8	22499.2
+Formosa	Clorinda	Bebidas	1356	18	109251.9
+Formosa	Clorinda	Bebidas	1357	4	6523.56
+Formosa	Clorinda	Bebidas	1358	6	4891.56
+Formosa	Clorinda	Bebidas	1359	17	138851.75
+Formosa	Clorinda	Bebidas	1360	16	80334.72
+Formosa	Clorinda	Bebidas	1361	15	122556.0
+Formosa	Clorinda	Bebidas	1362	25	103303.75
+Formosa	Clorinda	Bebidas	1363	5	24989.5
+Formosa	Clorinda	Bebidas	1364	8	7622.56
+Formosa	Clorinda	Bebidas	1365	11	55764.39
+Formosa	Clorinda	Bebidas	1647	5	31757.75
+Formosa	Clorinda	Bebidas	1656	21	56556.78
+Formosa	Clorinda	Bebidas	1678	4	14804.96
+Formosa	Clorinda	Bebidas	1729	21	13672.47
+Formosa	Clorinda	Bebidas	1733	19	47436.16
+Formosa	Clorinda	Bebidas	1754	21	111399.33
+Formosa	Clorinda	Bebidas	1759	5	9977.95
+Formosa	Clorinda	Bebidas	1891	13	108043.91
+Formosa	Clorinda	Bebidas	1935	1	4062.67
+Formosa	Clorinda	Bebidas	1951	11	29079.16
+Formosa	Clorinda	Bebidas	1974	4	25985.28
+Formosa	Clorinda	Lacteos	1366	8	27276.0
+Formosa	Clorinda	Lacteos	1367	19	36840.24
+Formosa	Clorinda	Lacteos	1368	1	6784.47
+Formosa	Clorinda	Lacteos	1369	14	49533.68
+Formosa	Clorinda	Lacteos	1370	24	114933.36
+Formosa	Clorinda	Lacteos	1371	13	33041.06
+Formosa	Clorinda	Lacteos	1372	25	17480.75
+Formosa	Clorinda	Lacteos	1373	9	47091.42
+Formosa	Clorinda	Lacteos	1374	12	15167.76
+Formosa	Clorinda	Lacteos	1375	17	82172.05
+Formosa	Clorinda	Lacteos	1376	7	6786.43
+Formosa	Clorinda	Lacteos	1377	8	28426.88
+Formosa	Clorinda	Lacteos	1378	21	86012.85
+Formosa	Clorinda	Lacteos	1537	14	53697.56
+Formosa	Clorinda	Lacteos	1538	21	39799.83
+Formosa	Clorinda	Lacteos	1542	15	104872.95
+Formosa	Clorinda	Lacteos	1564	15	69100.05
+Formosa	Clorinda	Lacteos	1569	14	47364.66
+Formosa	Clorinda	Lacteos	1651	7	51697.94
+Formosa	Clorinda	Lacteos	1661	11	76535.25
+Formosa	Clorinda	Lacteos	1767	4	9963.08
+Formosa	Clorinda	Lacteos	1777	21	123306.12
+Formosa	Clorinda	Lacteos	1784	11	47845.82
+Formosa	Clorinda	Lacteos	1794	3	21270.93
+Formosa	Clorinda	Lacteos	1838	19	125223.87
+Formosa	Clorinda	Lacteos	1841	6	34337.4
+Formosa	Clorinda	Lacteos	1956	2	3193.74
+Formosa	Clorinda	Lacteos	1960	23	53264.09
+Formosa	Clorinda	Lacteos	1969	1	322.14
+Formosa	Clorinda	Lacteos	1992	4	19390.28
+Formosa	Clorinda	Limpieza	1379	1	1276.14
+Formosa	Clorinda	Limpieza	1380	14	90008.52
+Formosa	Clorinda	Limpieza	1381	16	139508.64
+Formosa	Clorinda	Limpieza	1382	16	2425.28
+Formosa	Clorinda	Limpieza	1383	13	108973.93
+Formosa	Clorinda	Limpieza	1384	17	131254.28
+Formosa	Clorinda	Limpieza	1385	15	35233.8
+Formosa	Clorinda	Limpieza	1386	4	8522.52
+Formosa	Clorinda	Limpieza	1387	5	23864.7
+Formosa	Clorinda	Limpieza	1388	22	24500.96
+Formosa	Clorinda	Limpieza	1389	24	152493.12
+Formosa	Clorinda	Limpieza	1390	25	201743.75
+Formosa	Clorinda	Limpieza	1546	24	110748.0
+Formosa	Clorinda	Limpieza	1587	6	42961.8
+Formosa	Clorinda	Limpieza	1725	17	54132.08
+Formosa	Clorinda	Limpieza	1851	20	139545.8
+Formosa	Clorinda	Limpieza	1877	21	89279.19
+Formosa	Clorinda	Limpieza	1906	9	32417.37
+Formosa	Clorinda	Limpieza	1907	16	56157.92
+Formosa	Clorinda	Limpieza	1957	19	102881.58
+Formosa	Clorinda	Limpieza	1980	15	101358.3
+Formosa	Clorinda	Limpieza	1990	12	28274.04
+Formosa	Clorinda	Panaderia	1391	18	126454.14
+Formosa	Clorinda	Panaderia	1392	1	7073.34
+Formosa	Clorinda	Panaderia	1393	8	41512.24
+Formosa	Clorinda	Panaderia	1394	2	11725.46
+Formosa	Clorinda	Panaderia	1395	10	86675.5
+Formosa	Clorinda	Panaderia	1396	21	49945.98
+Formosa	Clorinda	Panaderia	1397	21	84446.46
+Formosa	Clorinda	Panaderia	1398	25	28559.25
+Formosa	Clorinda	Panaderia	1399	3	8424.27
+Formosa	Clorinda	Panaderia	1552	3	24457.05
+Formosa	Clorinda	Panaderia	1624	1	3470.15
+Formosa	Clorinda	Panaderia	1653	4	9328.84
+Formosa	Clorinda	Panaderia	1702	15	6754.35
+Formosa	Clorinda	Panaderia	1861	7	49847.42
+Formosa	Clorinda	Panaderia	1866	15	74009.55
+Formosa	Clorinda	Panaderia	1885	5	11989.3
+Formosa	Clorinda	Panaderia	1890	3	23361.87
+Formosa	Clorinda	Panaderia	1972	19	80861.53
+Formosa	Clorinda	Panaderia	1982	23	89039.44
+Formosa	Formosa Centro	Almacen	1400	7	25091.71
+Formosa	Formosa Centro	Almacen	1401	8	57166.48
+Formosa	Formosa Centro	Almacen	1402	1	242.59
+Formosa	Formosa Centro	Almacen	1403	10	89679.1
+Formosa	Formosa Centro	Almacen	1404	9	77729.58
+Formosa	Formosa Centro	Almacen	1405	21	159154.59
+Formosa	Formosa Centro	Almacen	1406	8	34851.52
+Formosa	Formosa Centro	Almacen	1407	8	39927.76
+Formosa	Formosa Centro	Almacen	1408	1	8651.44
+Formosa	Formosa Centro	Almacen	1409	23	135686.2
+Formosa	Formosa Centro	Almacen	1410	2	685.64
+Formosa	Formosa Centro	Almacen	1411	16	127694.56
+Formosa	Formosa Centro	Almacen	1412	21	81209.94
+Formosa	Formosa Centro	Almacen	1413	9	19497.51
+Formosa	Formosa Centro	Almacen	1414	14	116727.38
+Formosa	Formosa Centro	Almacen	1415	8	36100.4
+Formosa	Formosa Centro	Almacen	1416	23	72260.48
+Formosa	Formosa Centro	Almacen	1532	22	110411.84
+Formosa	Formosa Centro	Almacen	1539	7	59406.13
+Formosa	Formosa Centro	Almacen	1545	3	15659.55
+Formosa	Formosa Centro	Almacen	1568	4	2976.08
+Formosa	Formosa Centro	Almacen	1592	24	173025.12
+Formosa	Formosa Centro	Almacen	1594	5	16691.1
+Formosa	Formosa Centro	Almacen	1616	1	3743.0
+Formosa	Formosa Centro	Almacen	1631	22	88199.54
+Formosa	Formosa Centro	Almacen	1679	24	21903.12
+Formosa	Formosa Centro	Almacen	1703	14	88017.16
+Formosa	Formosa Centro	Almacen	1706	1	6707.37
+Formosa	Formosa Centro	Almacen	1736	15	30394.65
+Formosa	Formosa Centro	Almacen	1760	18	29448.54
+Formosa	Formosa Centro	Almacen	1782	14	79571.94
+Formosa	Formosa Centro	Almacen	1785	18	125452.44
+Formosa	Formosa Centro	Almacen	1796	18	94145.22
+Formosa	Formosa Centro	Almacen	1797	10	11102.3
+Formosa	Formosa Centro	Almacen	1816	15	11173.35
+Formosa	Formosa Centro	Almacen	1849	10	53243.1
+Formosa	Formosa Centro	Almacen	1873	19	63197.42
+Formosa	Formosa Centro	Almacen	1943	3	22459.17
+Formosa	Formosa Centro	Almacen	1978	5	24715.7
+Formosa	Formosa Centro	Almacen	1984	2	14051.26
+Formosa	Formosa Centro	Almacen	1996	15	86308.8
+Formosa	Formosa Centro	Bebidas	1417	12	74288.64
+Formosa	Formosa Centro	Bebidas	1418	7	1468.39
+Formosa	Formosa Centro	Bebidas	1419	10	66912.9
+Formosa	Formosa Centro	Bebidas	1420	17	12695.26
+Formosa	Formosa Centro	Bebidas	1421	16	139732.0
+Formosa	Formosa Centro	Bebidas	1422	10	69278.4
+Formosa	Formosa Centro	Bebidas	1423	7	15348.62
+Formosa	Formosa Centro	Bebidas	1424	8	19963.52
+Formosa	Formosa Centro	Bebidas	1425	10	11147.2
+Formosa	Formosa Centro	Bebidas	1426	20	90750.4
+Formosa	Formosa Centro	Bebidas	1427	6	48502.86
+Formosa	Formosa Centro	Bebidas	1428	16	61451.36
+Formosa	Formosa Centro	Bebidas	1429	22	14284.38
+Formosa	Formosa Centro	Bebidas	1430	20	28909.8
+Formosa	Formosa Centro	Bebidas	1605	19	53489.18
+Formosa	Formosa Centro	Bebidas	1621	20	33911.2
+Formosa	Formosa Centro	Bebidas	1664	1	4012.58
+Formosa	Formosa Centro	Bebidas	1714	8	56592.4
+Formosa	Formosa Centro	Bebidas	1741	15	134487.45
+Formosa	Formosa Centro	Bebidas	1819	18	18955.44
+Formosa	Formosa Centro	Bebidas	1842	16	57020.48
+Formosa	Formosa Centro	Bebidas	1933	6	3952.32
+Formosa	Formosa Centro	Bebidas	1953	25	109201.0
+Formosa	Formosa Centro	Lacteos	1431	2	4069.2
+Formosa	Formosa Centro	Lacteos	1432	20	28118.2
+Formosa	Formosa Centro	Lacteos	1433	2	12864.5
+Formosa	Formosa Centro	Lacteos	1434	6	21785.4
+Formosa	Formosa Centro	Lacteos	1435	23	183303.56
+Formosa	Formosa Centro	Lacteos	1436	24	27644.88
+Formosa	Formosa Centro	Lacteos	1437	3	25183.86
+Formosa	Formosa Centro	Lacteos	1438	11	20213.05
+Formosa	Formosa Centro	Lacteos	1439	21	177083.55
+Formosa	Formosa Centro	Lacteos	1440	24	102921.6
+Formosa	Formosa Centro	Lacteos	1441	10	60302.0
+Formosa	Formosa Centro	Lacteos	1442	13	98491.51
+Formosa	Formosa Centro	Lacteos	1443	11	44721.05
+Formosa	Formosa Centro	Lacteos	1444	4	701.64
+Formosa	Formosa Centro	Lacteos	1600	14	65620.8
+Formosa	Formosa Centro	Lacteos	1659	9	3016.17
+Formosa	Formosa Centro	Lacteos	1707	23	120283.33
+Formosa	Formosa Centro	Lacteos	1716	16	66855.52
+Formosa	Formosa Centro	Lacteos	1732	21	132920.34
+Formosa	Formosa Centro	Lacteos	1787	9	45478.26
+Formosa	Formosa Centro	Lacteos	1807	25	26009.0
+Formosa	Formosa Centro	Lacteos	1815	19	119833.95
+Formosa	Formosa Centro	Lacteos	1854	6	32050.74
+Formosa	Formosa Centro	Lacteos	1931	9	80847.54
+Formosa	Formosa Centro	Lacteos	1991	22	126484.6
+Formosa	Formosa Centro	Limpieza	1445	3	9781.44
+Formosa	Formosa Centro	Limpieza	1446	4	20463.96
+Formosa	Formosa Centro	Limpieza	1447	25	49637.75
+Formosa	Formosa Centro	Limpieza	1448	12	83439.36
+Formosa	Formosa Centro	Limpieza	1449	10	74247.7
+Formosa	Formosa Centro	Limpieza	1450	14	12973.52
+Formosa	Formosa Centro	Limpieza	1451	23	99823.68
+Formosa	Formosa Centro	Limpieza	1452	12	59310.36
+Formosa	Formosa Centro	Limpieza	1453	15	27874.2
+Formosa	Formosa Centro	Limpieza	1454	12	80103.36
+Formosa	Formosa Centro	Limpieza	1455	16	6688.0
+Formosa	Formosa Centro	Limpieza	1456	14	32828.88
+Formosa	Formosa Centro	Limpieza	1540	6	23401.38
+Formosa	Formosa Centro	Limpieza	1570	17	79303.81
+Formosa	Formosa Centro	Limpieza	1625	24	197364.0
+Formosa	Formosa Centro	Limpieza	1700	9	16976.61
+Formosa	Formosa Centro	Limpieza	1735	8	71591.52
+Formosa	Formosa Centro	Limpieza	1766	22	175158.28
+Formosa	Formosa Centro	Limpieza	1908	8	58374.8
+Formosa	Formosa Centro	Limpieza	1937	1	7137.65
+Formosa	Formosa Centro	Limpieza	1938	10	17945.1
+Formosa	Formosa Centro	Limpieza	1939	2	16442.08
+Formosa	Formosa Centro	Panaderia	1457	25	93306.0
+Formosa	Formosa Centro	Panaderia	1458	13	5959.98
+Formosa	Formosa Centro	Panaderia	1459	3	21778.62
+Formosa	Formosa Centro	Panaderia	1460	2	4849.18
+Formosa	Formosa Centro	Panaderia	1461	24	16949.76
+Formosa	Formosa Centro	Panaderia	1462	20	63015.4
+Formosa	Formosa Centro	Panaderia	1463	9	28030.41
+Formosa	Formosa Centro	Panaderia	1464	20	10714.6
+Formosa	Formosa Centro	Panaderia	1465	24	155813.52
+Formosa	Formosa Centro	Panaderia	1466	11	91623.62
+Formosa	Formosa Centro	Panaderia	1467	10	1833.8
+Formosa	Formosa Centro	Panaderia	1468	25	135519.5
+Formosa	Formosa Centro	Panaderia	1469	21	179054.82
+Formosa	Formosa Centro	Panaderia	1470	3	1094.01
+Formosa	Formosa Centro	Panaderia	1471	8	8794.08
+Formosa	Formosa Centro	Panaderia	1472	23	198202.04
+Formosa	Formosa Centro	Panaderia	1473	25	89266.5
+Formosa	Formosa Centro	Panaderia	1474	9	74113.74
+Formosa	Formosa Centro	Panaderia	1567	6	43939.08
+Formosa	Formosa Centro	Panaderia	1590	18	85767.3
+Formosa	Formosa Centro	Panaderia	1687	22	111112.32
+Formosa	Formosa Centro	Panaderia	1726	7	62397.72
+Formosa	Formosa Centro	Panaderia	1826	24	161669.76
+Formosa	Formosa Centro	Panaderia	1831	22	184827.94
+Formosa	Formosa Centro	Panaderia	1864	7	58415.63
+Formosa	Formosa Centro	Panaderia	1872	23	62438.1
+Formosa	Formosa Centro	Panaderia	1884	25	134977.75
+Formosa	Formosa Centro	Panaderia	1895	6	20595.36
+Formosa	Formosa Centro	Panaderia	1920	5	20174.45
+Formosa	Formosa Centro	Panaderia	1959	17	13283.29
+Formosa	Formosa Centro	Panaderia	1963	2	5460.28
+Formosa	Pirane	Almacen	1475	5	41818.4
+Formosa	Pirane	Almacen	1476	6	1362.24
+Formosa	Pirane	Almacen	1477	24	68024.16
+Formosa	Pirane	Almacen	1478	23	160755.28
+Formosa	Pirane	Almacen	1479	20	44797.2
+Formosa	Pirane	Almacen	1480	11	46507.01
+Formosa	Pirane	Almacen	1481	20	16985.6
+Formosa	Pirane	Almacen	1482	7	25314.94
+Formosa	Pirane	Almacen	1483	6	14032.02
+Formosa	Pirane	Almacen	1484	3	17695.44
+Formosa	Pirane	Almacen	1485	16	80647.36
+Formosa	Pirane	Almacen	1486	11	17293.43
+Formosa	Pirane	Almacen	1487	14	111562.5
+Formosa	Pirane	Almacen	1488	3	7482.87
+Formosa	Pirane	Almacen	1489	3	5981.46
+Formosa	Pirane	Almacen	1607	6	8055.18
+Formosa	Pirane	Almacen	1724	17	4973.18
+Formosa	Pirane	Almacen	1743	12	85017.6
+Formosa	Pirane	Almacen	1775	12	47021.52
+Formosa	Pirane	Almacen	1799	20	138579.2
+Formosa	Pirane	Almacen	1839	22	35711.72
+Formosa	Pirane	Almacen	1874	17	131478.17
+Formosa	Pirane	Almacen	1892	3	7278.48
+Formosa	Pirane	Almacen	1917	4	22837.68
+Formosa	Pirane	Bebidas	1490	16	142361.92
+Formosa	Pirane	Bebidas	1491	15	25241.25
+Formosa	Pirane	Bebidas	1492	5	19195.2
+Formosa	Pirane	Bebidas	1493	20	160753.4
+Formosa	Pirane	Bebidas	1494	8	54156.8
+Formosa	Pirane	Bebidas	1495	25	150754.0
+Formosa	Pirane	Bebidas	1496	4	28203.16
+Formosa	Pirane	Bebidas	1497	10	27499.7
+Formosa	Pirane	Bebidas	1498	19	47857.96
+Formosa	Pirane	Bebidas	1499	9	60137.1
+Formosa	Pirane	Bebidas	1500	7	28270.69
+Formosa	Pirane	Bebidas	1501	6	13927.56
+Formosa	Pirane	Bebidas	1502	5	13199.9
+Formosa	Pirane	Bebidas	1503	19	34504.19
+Formosa	Pirane	Bebidas	1566	15	33479.55
+Formosa	Pirane	Bebidas	1720	4	1950.36
+Formosa	Pirane	Bebidas	1749	14	79334.78
+Formosa	Pirane	Bebidas	1837	20	13580.8
+Formosa	Pirane	Lacteos	1504	13	30902.82
+Formosa	Pirane	Lacteos	1505	8	37118.56
+Formosa	Pirane	Lacteos	1506	8	47194.56
+Formosa	Pirane	Lacteos	1507	4	23727.76
+Formosa	Pirane	Lacteos	1508	2	2111.28
+Formosa	Pirane	Lacteos	1509	16	127408.0
+Formosa	Pirane	Lacteos	1510	8	60711.36
+Formosa	Pirane	Lacteos	1511	12	6086.4
+Formosa	Pirane	Lacteos	1512	10	22111.0
+Formosa	Pirane	Lacteos	1577	10	86162.6
+Formosa	Pirane	Lacteos	1771	6	29549.7
+Formosa	Pirane	Lacteos	1774	22	61090.26
+Formosa	Pirane	Lacteos	1789	13	40344.72
+Formosa	Pirane	Lacteos	1859	12	58569.96
+Formosa	Pirane	Lacteos	1876	12	93808.68
+Formosa	Pirane	Lacteos	1976	19	87052.11
+Formosa	Pirane	Limpieza	1513	7	38250.59
+Formosa	Pirane	Limpieza	1514	19	35498.27
+Formosa	Pirane	Limpieza	1515	3	10332.9
+Formosa	Pirane	Limpieza	1516	6	24747.96
+Formosa	Pirane	Limpieza	1517	9	63078.57
+Formosa	Pirane	Limpieza	1518	22	187428.12
+Formosa	Pirane	Limpieza	1519	4	23166.0
+Formosa	Pirane	Limpieza	1520	23	129640.42
+Formosa	Pirane	Limpieza	1574	13	77048.4
+Formosa	Pirane	Limpieza	1582	16	31898.56
+Formosa	Pirane	Limpieza	1704	21	58201.29
+Formosa	Pirane	Limpieza	1745	9	79637.31
+Formosa	Pirane	Limpieza	1870	19	36794.45
+Formosa	Pirane	Limpieza	1936	11	51374.84
+Formosa	Pirane	Limpieza	1994	22	7355.26
+Formosa	Pirane	Panaderia	1521	2	6826.14
+Formosa	Pirane	Panaderia	1522	5	2704.35
+Formosa	Pirane	Panaderia	1523	9	4395.51
+Formosa	Pirane	Panaderia	1524	24	142008.96
+Formosa	Pirane	Panaderia	1525	7	51523.36
+Formosa	Pirane	Panaderia	1526	11	41465.6
+Formosa	Pirane	Panaderia	1527	12	21462.36
+Formosa	Pirane	Panaderia	1528	10	8397.2
+Formosa	Pirane	Panaderia	1529	2	14376.48
+Formosa	Pirane	Panaderia	1530	18	79722.72
+Formosa	Pirane	Panaderia	1531	14	14661.92
+Formosa	Pirane	Panaderia	1557	6	21267.9
+Formosa	Pirane	Panaderia	1573	3	1890.72
+Formosa	Pirane	Panaderia	1614	24	108281.76
+Formosa	Pirane	Panaderia	1620	20	116756.8
+Formosa	Pirane	Panaderia	1673	9	47388.33
+Formosa	Pirane	Panaderia	1685	21	9447.27
+Formosa	Pirane	Panaderia	1721	7	11014.22
+Formosa	Pirane	Panaderia	1900	23	153989.6
+Formosa	Pirane	Panaderia	1928	7	35738.43
+Formosa	Pirane	Panaderia	1965	1	4845.02
+Formosa	Pirane	Panaderia	1989	5	43135.35

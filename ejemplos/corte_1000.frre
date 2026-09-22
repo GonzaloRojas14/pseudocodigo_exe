@@ -1,0 +1,127 @@
+/*
+    CORTE DE CONTROL DE TRES NIVELES — 1000 registros de verdad
+
+    Los datos están en corte_1000.datos/ventas.tsv: el archivo de datos se
+    llama como la VARIABLE declarada en el Ambiente (ventas), y la carpeta
+    como el ejercicio.
+
+    PRECONDICIÓN, y es la que rompe todo si falla: el archivo tiene que estar
+    ORDENADO por las claves de corte, de MAYOR a MENOR jerarquía. Acá es
+    provincia (mayor) → sucursal (intermedia) → rubro (menor). Si el archivo
+    no viene ordenado, el mismo grupo aparece varias veces y los totales salen
+    partidos. Por eso la declaración dice "ordenado por ...": la extensión lo
+    verifica al abrir y te avisa si el archivo no cumple.
+
+    nro_venta es la clave más fina, el identificador único de cada venta, y
+    NO genera corte: no hay nada que totalizar adentro de una sola venta.
+
+    Un nivel de corte por cada nivel de totalización que pida la consigna:
+    tres cortes (rubro, sucursal, provincia) más el total general.
+*/
+
+ACCION corte_de_control_tres_niveles ES
+    Ambiente
+        venta = REGISTRO
+            provincia : AN(20)      // corte MAYOR
+            sucursal  : AN(20)      // corte INTERMEDIO
+            rubro     : AN(20)      // corte MENOR
+            nro_venta : entero      // clave única: NO genera corte
+            cantidad  : entero
+            importe   : real
+        FIN_REGISTRO
+
+        ventas : ARCHIVO de venta ordenado por provincia, sucursal y rubro
+        r : venta
+
+        // un resguardo por cada nivel de corte
+        resg_provincia, resg_sucursal, resg_rubro : AN(20)
+
+        // un acumulador por cada nivel, más el general
+        acum_rubro, acum_sucursal, acum_provincia, acum_general : real
+
+        // contadores, para ver el tamaño de cada grupo
+        cant_rubro, cant_general : entero
+
+        PROCEDIMIENTO inicializar ES
+            Proceso
+                acum_general := 0
+                acum_provincia := 0
+                acum_sucursal := 0
+                acum_rubro := 0
+                cant_rubro := 0
+                cant_general := 0
+                resg_provincia := r.provincia
+                resg_sucursal := r.sucursal
+                resg_rubro := r.rubro
+        FIN_PROCEDIMIENTO
+
+        PROCEDIMIENTO tratar_registro ES
+            Proceso
+                acum_rubro := acum_rubro + r.importe
+                cant_rubro := cant_rubro + 1
+                cant_general := cant_general + 1
+        FIN_PROCEDIMIENTO
+
+        // ── CORTE MENOR: no llama a ningún otro corte ──
+        PROCEDIMIENTO corte_rubro ES
+            Proceso
+                ESCRIBIR("      rubro ", resg_rubro, ": ", acum_rubro, "  (", cant_rubro, " ventas)")
+                acum_sucursal := acum_sucursal + acum_rubro
+                acum_rubro := 0
+                cant_rubro := 0
+                resg_rubro := r.rubro
+        FIN_PROCEDIMIENTO
+
+        // ── CORTE INTERMEDIO: primero llama al de abajo ──
+        PROCEDIMIENTO corte_sucursal ES
+            Proceso
+                corte_rubro
+                ESCRIBIR("   sucursal ", resg_sucursal, ": ", acum_sucursal)
+                acum_provincia := acum_provincia + acum_sucursal
+                acum_sucursal := 0
+                resg_sucursal := r.sucursal
+        FIN_PROCEDIMIENTO
+
+        // ── CORTE MAYOR ──
+        PROCEDIMIENTO corte_provincia ES
+            Proceso
+                corte_sucursal
+                ESCRIBIR("PROVINCIA ", resg_provincia, ": ", acum_provincia)
+                ESCRIBIR("")
+                acum_general := acum_general + acum_provincia
+                acum_provincia := 0
+                resg_provincia := r.provincia
+        FIN_PROCEDIMIENTO
+
+        // ── ELECCIÓN DEL CORTE: se pregunta de MAYOR a MENOR ──
+        // Si cortó la provincia, la cascada ya cubre sucursal y rubro.
+        PROCEDIMIENTO tratar_corte ES
+            Proceso
+                SI (r.provincia <> resg_provincia) ENTONCES
+                    corte_provincia
+                SINO
+                    SI (r.sucursal <> resg_sucursal) ENTONCES
+                        corte_sucursal
+                    SINO
+                        SI (r.rubro <> resg_rubro) ENTONCES
+                            corte_rubro
+                        FIN_SI
+                    FIN_SI
+                FIN_SI
+        FIN_PROCEDIMIENTO
+
+    Proceso
+        ABRIR E/(ventas)
+        LEER(ventas, r)       // lectura anticipada: va ANTES de inicializar,
+        inicializar         // porque los resguardos toman el primer registro
+
+        MIENTRAS NFDA(ventas) HACER
+            tratar_corte
+            tratar_registro
+            LEER(ventas, r)   // última instrucción del ciclo, siempre
+        FIN_MIENTRAS
+
+        corte_provincia     // corte de MAYOR jerarquía: cascadea hacia abajo solo
+        ESCRIBIR("GENERAL: ", acum_general, "  (", cant_general, " ventas)")
+        CERRAR(ventas)
+FIN_ACCION

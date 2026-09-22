@@ -2,7 +2,7 @@
   "name": "aed-pseudocodigo",
   "displayName": "AED Pseudocódigo (UTN-FRRe)",
   "description": "Resaltado, diagnósticos y ejecución del pseudocódigo de Algoritmos y Estructuras de Datos (UTN-FRRe).",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "publisher": "gonzalo",
   "license": "MIT",
   "icon": "icon.png",
@@ -133,7 +133,8 @@
     "test": "node --import tsx --test test/*.test.ts",
     "test:vscode": "node build.mjs && vscode-test",
     "package": "npm run compile && npx --yes @vscode/vsce package --no-dependencies",
-    "check:resaltado": "node scripts/tm-check.cjs ejemplos/demo.frre"
+    "check:resaltado": "node scripts/tm-check.cjs ejemplos/demo.frre",
+    "aed": "node --import tsx scripts/aed.ts"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

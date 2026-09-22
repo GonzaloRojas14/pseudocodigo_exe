@@ -78,7 +78,9 @@ export function cloneValue(value: Value): Value {
 export function formatValue(value: Value): string {
   if (typeof value === "number") {
     if (Number.isInteger(value)) return String(value);
-    return String(Number(value.toFixed(10)));
+    // 15 dígitos significativos limpian el ruido binario de sumar muchos reales
+    // (785960.3900000001 -> 785960.39) sin tocar los decimales que importan
+    return String(Number(value.toPrecision(15)));
   }
   if (typeof value === "boolean") return value ? "verdadero" : "falso";
   if (value instanceof RecordVal) return [...value.fields.values()].map(formatValue).join(" | ");

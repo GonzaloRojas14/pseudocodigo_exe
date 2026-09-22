@@ -144,6 +144,8 @@ export class ArchivoAbierto implements Archivo {
 
   /** campos que forman la clave, si el archivo es INDEXADO */
   indexadoPor: string[] = [];
+  /** claves declaradas en "ordenado por ...": son la precondición del corte de control */
+  ordenadoPor: string[] = [];
 
   constructor(
     readonly nombre: string,
@@ -264,6 +266,52 @@ export class ArchivoAbierto implements Archivo {
       );
     }
     this.filas = this.parsearTsv(contenido, fs.ruta(this.nombre, ".tsv"), pos);
+    this.verificarOrden(pos);
+  }
+
+  /**
+   * El corte de control solo funciona si el archivo viene ordenado por las claves
+   * de corte. Si la declaración lo promete y el archivo no cumple, más vale decirlo
+   * acá que dejar que salgan totales partidos.
+   */
+  private verificarOrden(pos?: Pos): void {
+    if (this.ordenadoPor.length === 0) return;
+
+    for (let i = 1; i < this.filas.length; i++) {
+      const comparacion = this.compararPorClaves(this.filas[i - 1], this.filas[i]);
+      if (comparacion <= 0) continue;
+
+      const valores = this.ordenadoPor
+        .map((campo) => formatValue(this.filas[i].fields.get(campo.toLowerCase()) ?? ""))
+        .join(", ");
+      const anteriores = this.ordenadoPor
+        .map((campo) => formatValue(this.filas[i - 1].fields.get(campo.toLowerCase()) ?? ""))
+        .join(", ");
+      throw new RuntimeError(
+        `"${this.nombre}" está declarado "ordenado por ${this.ordenadoPor.join(", ")}", pero los datos no lo están: ` +
+          `la fila ${i + 2} (${valores}) va antes que la ${i + 1} (${anteriores}). ` +
+          "Ordená el archivo por esas claves, de mayor a menor jerarquía: si no, el corte de control " +
+          "vuelve a abrir grupos ya cerrados y los totales salen partidos.",
+        pos
+      );
+    }
+  }
+
+  private compararPorClaves(a: RecordVal, b: RecordVal): number {
+    for (const campo of this.ordenadoPor) {
+      const clave = campo.toLowerCase();
+      const va = a.fields.get(clave);
+      const vb = b.fields.get(clave);
+      if (va === undefined || vb === undefined) continue;
+      if (typeof va === "number" && typeof vb === "number") {
+        if (va !== vb) return va < vb ? -1 : 1;
+        continue;
+      }
+      const sa = formatValue(va);
+      const sb = formatValue(vb);
+      if (sa !== sb) return sa < sb ? -1 : 1;
+    }
+    return 0;
   }
 
   private parsearTsv(contenido: string, ruta: string, pos?: Pos): RecordVal[] {
