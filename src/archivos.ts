@@ -303,13 +303,8 @@ export class ArchivoAbierto implements Archivo {
       const va = a.fields.get(clave);
       const vb = b.fields.get(clave);
       if (va === undefined || vb === undefined) continue;
-      if (typeof va === "number" && typeof vb === "number") {
-        if (va !== vb) return va < vb ? -1 : 1;
-        continue;
-      }
-      const sa = formatValue(va);
-      const sb = formatValue(vb);
-      if (sa !== sb) return sa < sb ? -1 : 1;
+      const orden = compararValores(va, vb);
+      if (orden !== 0) return orden;
     }
     return 0;
   }
@@ -493,4 +488,28 @@ export class SecuenciaAbierta implements Secuencia {
     }
     this.abierta = false;
   }
+}
+
+/**
+ * Orden entre dos valores de clave. Si la clave es un REGISTRO (el caso de
+ * "ordenado por fecha" o "ordenado por clave"), se compara campo por campo en
+ * el orden en que están declarados — que es justo la regla de la cátedra.
+ * Compararlos como texto haría que el día 17 quede antes que el 3.
+ */
+export function compararValores(a: Value, b: Value): number {
+  if (typeof a === "number" && typeof b === "number") {
+    return a === b ? 0 : a < b ? -1 : 1;
+  }
+  if (a instanceof RecordVal && b instanceof RecordVal) {
+    for (const [campo, valorA] of a.fields) {
+      const valorB = b.fields.get(campo);
+      if (valorB === undefined) continue;
+      const orden = compararValores(valorA, valorB);
+      if (orden !== 0) return orden;
+    }
+    return 0;
+  }
+  const sa = formatValue(a);
+  const sb = formatValue(b);
+  return sa === sb ? 0 : sa < sb ? -1 : 1;
 }

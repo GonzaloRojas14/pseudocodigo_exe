@@ -1264,3 +1264,48 @@ test("baja lógica y baja física en una actualización por lotes", async () => 
   assert.deepEqual(archivos["logica.tsv"].trim().split("\n").slice(1), ["10\t50\t-", "20\t30\t*"]);
   assert.deepEqual(archivos["fisica.tsv"].trim().split("\n").slice(1), ["10\t50\t-"]);
 });
+
+test("una clave de orden que es REGISTRO se compara campo por campo, no como texto", async () => {
+  // El día 3 va antes que el 17. Comparando los registros formateados como
+  // texto, "… | 3" salía después de "… | 17" y el archivo se rechazaba.
+  const porFecha =
+    "nro\tf.anio\tf.mes\tf.dia\timporte\n" +
+    "1\t2026\t2\t3\t100\n" +
+    "2\t2026\t2\t17\t200\n" +
+    "3\t2026\t2\t27\t300\n";
+
+  const salida = await execute(
+    `
+    ACCION orden_por_registro ES
+        Ambiente
+            fecha = REGISTRO
+                anio : 1..9999
+                mes  : 1..12
+                dia  : 1..31
+            FIN_REGISTRO
+            mov = REGISTRO
+                nro     : entero
+                f       : fecha
+                importe : real
+            FIN_REGISTRO
+            arch : ARCHIVO de mov ordenado por f
+            r : mov
+            total : real
+        Proceso
+            total := 0
+            ABRIR E/(arch)
+            LEER(arch, r)
+            MIENTRAS NFDA(arch) HACER
+                total := total + r.importe
+                LEER(arch, r)
+            FIN_MIENTRAS
+            CERRAR(arch)
+            ESCRIBIR(total)
+    FIN_ACCION
+  `,
+    [],
+    { "arch.tsv": porFecha }
+  );
+
+  assert.deepStrictEqual(salida, ["600"]);
+});

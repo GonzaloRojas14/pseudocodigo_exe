@@ -2,7 +2,7 @@
   "name": "aed-pseudocodigo",
   "displayName": "AED Pseudocódigo (UTN-FRRe)",
   "description": "Resaltado, diagnósticos y ejecución del pseudocódigo de Algoritmos y Estructuras de Datos (UTN-FRRe).",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "publisher": "gonzalo",
   "license": "MIT",
   "icon": "icon.png",
