@@ -87,7 +87,7 @@ test("acepta la notación vieja completa: Algoritmo / Contrario / FinSi", () => 
   assert.deepEqual(errors(source), []);
 });
 
-test("mezclar notación moderna y vieja se avisa", () => {
+test("mezclar notación moderna y vieja es válido: la cátedra acepta las dos", () => {
   const source = `
     ACCION mezclada ES
         Ambiente
@@ -99,7 +99,8 @@ test("mezclar notación moderna y vieja se avisa", () => {
             FIN_SI
     FIN_ACCION
   `;
-  assert.ok(warnings(source).some((m) => m.includes("mezcla la notación")));
+  assert.deepEqual(errors(source), []);
+  assert.ok(!warnings(source).some((m) => m.includes("mezcla")));
 });
 
 test("declaraciones de archivos, secuencias e indexados", () => {

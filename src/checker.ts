@@ -66,6 +66,10 @@ class Checker {
 
   constructor(private program: Program) {}
 
+  // Las dos notaciones (FIN_SI / FinSi, Proceso / Algoritmo) son válidas para la
+  // cátedra, y sus propios materiales las mezclan: el libro y las filminas usan
+  // una, las resoluciones de la guía usan la otra, y los parciales resueltos en
+  // clase mezclan las dos. Por eso acá no se avisa nada al respecto.
   run(): Diagnostic[] {
     if (this.program.name.includes(".")) {
       this.warn(
@@ -73,13 +77,6 @@ class Checker {
         `El nombre de la ACCION no lleva puntos ni espacios: "${this.program.name}" iría como "${this.program.name.replace(/\./g, "_")}" (errores-y-trampas #26).`
       );
     }
-    if (this.program.notations.has("moderna") && this.program.notations.has("vieja")) {
-      this.warn(
-        this.program.pos,
-        "El archivo mezcla la notación moderna (Proceso / SINO / FIN_SI) con la vieja (Algoritmo / Contrario / FinSi). Conviene usar una sola (sintaxis-completa §1)."
-      );
-    }
-
     this.collectDeclarations(this.program.declarations, this.global);
 
     for (const decl of this.program.declarations) {
