@@ -1,0 +1,80 @@
+/*
+    DATOS EXTERNOS: lo que la consigna te da por recibido
+
+    Muchos enunciados de la cátedra arrancan así:
+
+        "Desarrollar un algoritmo que RECIBA COMO PARÁMETRO los 50 códigos de
+         error y el año que se desea procesar..."
+        "Se cuenta con un vector de 6 posiciones con el costo por hora..."
+
+    Eso son DATOS EXTERNOS: no los produce el algoritmo, se los dan hechos. Se
+    escriben como parámetros de la ACCION, y cada uno se carga de su propio
+    archivo en la carpeta parametros.datos/:
+
+        vendedores : ARREGLO de REGISTRO  ->  vendedores.tsv  (encabezado + filas)
+        mes        : un valor suelto      ->  mes.txt         (un valor)
+
+    El archivo se llama como el parámetro. Si falta, la extensión te dice
+    exactamente dónde tiene que estar.
+
+    Probá: cambiá el 3 de mes.txt por un 4 y volvé a ejecutar.
+*/
+
+ACCION ventas_por_vendedor(vendedores : ARREGLO[1..4] de vendedor, mes : 1..12) ES
+    Ambiente
+
+        vendedor = REGISTRO
+            codigo : 1..4
+            nombre : AN(20)
+        FIN_REGISTRO
+
+        venta = REGISTRO
+            mes          : 1..12
+            cod_vendedor : 1..4
+            importe      : real
+        FIN_REGISTRO
+
+        ventas : ARCHIVO de venta
+        r : venta
+
+        // un acumulador por vendedor: el código ES la posición del arreglo
+        total : ARREGLO[1..4] de real
+
+        i, pos_max : entero
+        maximo, general : real
+
+    Proceso
+        PARA i := 1 HASTA 4 HACER
+            total[i] := 0
+        FIN_PARA
+        general := 0
+
+        ABRIR E/(ventas)
+        LEER(ventas, r)
+        MIENTRAS NFDA(ventas) HACER
+            SI (r.mes = mes) ENTONCES              // "mes" vino por parámetro
+                total[r.cod_vendedor] := total[r.cod_vendedor] + r.importe
+                general := general + r.importe
+            FIN_SI
+            LEER(ventas, r)
+        FIN_MIENTRAS
+        CERRAR(ventas)
+
+        ESCRIBIR("Ventas del mes ", mes)
+        PARA i := 1 HASTA 4 HACER
+            // el nombre sale del arreglo que vino por parámetro
+            ESCRIBIR("  ", vendedores[i].nombre, ": ", total[i])
+        FIN_PARA
+        ESCRIBIR("TOTAL: ", general)
+
+        // el que más vendió: búsqueda lineal de máximo, inicializada ANTES del ciclo
+        maximo := total[1]
+        pos_max := 1
+        PARA i := 2 HASTA 4 HACER
+            SI (total[i] > maximo) ENTONCES
+                maximo := total[i]
+                pos_max := i
+            FIN_SI
+        FIN_PARA
+        ESCRIBIR("El que mas vendio: ", vendedores[pos_max].nombre, " con ", maximo)
+FIN_ACCION

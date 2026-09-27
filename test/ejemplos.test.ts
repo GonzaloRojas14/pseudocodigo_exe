@@ -131,3 +131,16 @@ test("demo: corre entero contestando en minúscula y en mayúscula", async () =>
     );
   }
 });
+
+test("parametros: la ACCION recibe el vector de vendedores y el mes desde los datos", async () => {
+  const salida = await correr("parametros.frre");
+  assert.deepStrictEqual(salida, [
+    "Ventas del mes 3",
+    "  Acosta: 17200",
+    "  Benitez: 12200",
+    "  Cabral: 21900",
+    "  Duarte: 13200",
+    "TOTAL: 64500",
+    "El que mas vendio: Cabral con 21900",
+  ]);
+});
