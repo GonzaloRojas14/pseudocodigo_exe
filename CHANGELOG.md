@@ -1,5 +1,10 @@
 # Cambios
 
+## 0.11.1
+
+- La página de la extensión explica en detalle de dónde salen los datos, el comando que genera las plantillas y los tres formatos, con ejemplos.
+- Decía que mezclar las dos notaciones daba un aviso: eso dejó de ser cierto en la 0.9.0.
+
 ## 0.11.0
 
 - **La ACCION puede recibir datos externos por parámetro**, como los plantea la cátedra: "reciba como parámetro los 50 códigos de error", "se cuenta con un vector de 6 posiciones". Antes se podía escribir pero los valores llegaban en cero. Ahora se cargan desde la carpeta de datos: un arreglo de registros en `.tsv` con encabezado, un arreglo de escalares o un valor suelto en `.txt`, un valor por línea.
