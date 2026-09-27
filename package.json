@@ -4,6 +4,10 @@
   "description": "Resaltado, diagnósticos y ejecución del pseudocódigo de Algoritmos y Estructuras de Datos (UTN-FRRe).",
   "version": "0.11.0",
   "publisher": "gonzalo",
+  "author": {
+    "name": "Rojas Gonzalo",
+    "url": "https://instagram.com/gonza._007"
+  },
   "license": "MIT",
   "icon": "icon.png",
   "galleryBanner": {

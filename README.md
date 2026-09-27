@@ -2,7 +2,7 @@
 
 Escribí y **ejecutá** el pseudocódigo de Algoritmos y Estructuras de Datos (ISI, UTN-FRRe) directamente en VS Code: resaltado, errores marcados mientras escribís y un botón de ejecutar que corre el algoritmo en la terminal integrada, como si fuera Python.
 
-> Herramienta **no oficial**, hecha por un alumno de la cátedra. No está asociada ni respaldada por la UTN-FRRe.
+> Herramienta **no oficial**, hecha por **Rojas Gonzalo**, alumno de la cátedra. No está asociada ni respaldada por la UTN-FRRe.
 
 ## Qué hace
 
@@ -65,6 +65,14 @@ No hay que escribirlos a mano desde cero: el comando **"AED: Generar plantilla d
 Un archivo `INDEXADO por clave` se accede por clave, no se recorre: se carga la clave en el registro, se hace `LEER`, se pregunta `SI EXISTE` y recién ahí se opera (`ESCRIBIR` da de alta, `RE-ESCRIBIR` modifica, `ELIMINAR` da de baja física). Los cambios quedan guardados entre corridas, así que un ABM se comporta como un maestro de verdad.
 
 **Todavía no se ejecuta:** las listas con punteros (`Puntero a`, `nil`, `NUEVO`), de la unidad 4.
+
+## Autor
+
+**Rojas Gonzalo** — estudiante de Ingeniería en Sistemas de Información, UTN-FRRe.
+
+Instagram: [@gonza._007](https://instagram.com/gonza._007)
+
+Si algo del pseudocódigo de la cátedra no corre como debería, escribime.
 
 ## Licencia
 
