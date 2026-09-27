@@ -369,6 +369,9 @@ class Parser {
         return { kind: "record", pos: first.pos, name: first.name, fields };
       }
       const value = this.parseExpression();
+      if (value.kind === "number") {
+        this.constantesNumericas.set(first.name.toLowerCase(), value.value);
+      }
       return { kind: "const", pos: first.pos, name: first.name, value };
     }
 
@@ -405,6 +408,9 @@ class Parser {
     }
     return fields;
   }
+
+  /** constantes numéricas ya declaradas, para poder usarlas como límite de arreglo */
+  private constantesNumericas = new Map<string, number>();
 
   private parseParams(): Param[] {
     const params: Param[] = [];
@@ -596,9 +602,28 @@ class Parser {
     );
   }
 
+  /**
+   * Un límite de arreglo o de subrango. Puede ser un número literal o el nombre
+   * de una constante numérica ya declarada: la cátedra escribe
+   * "CONSTANTES N = 50" y después "V : ARREGLO[1..N] de entero".
+   */
   private parseBound(): number {
     const negative = !!this.accept("-");
-    const tok = this.expect("NUMBER", "un límite numérico");
+    if (this.check("IDENT")) {
+      const tok = this.next();
+      const valor = this.constantesNumericas.get(tok.value.toLowerCase());
+      if (valor === undefined) {
+        this.error(
+          `El límite "${tok.value}" tiene que ser un número o una constante numérica ` +
+            `declarada antes en el Ambiente. El tamaño de un arreglo se fija al declararlo, ` +
+            `así que no puede depender de una variable.`,
+          tok.pos
+        );
+        return 1;
+      }
+      return negative ? -valor : valor;
+    }
+    const tok = this.expect("NUMBER", "un límite numérico o una constante");
     const value = Number(tok.value);
     return negative ? -value : value;
   }
@@ -893,6 +918,20 @@ class Parser {
     const left = this.parseAdditive();
     if (RELATIONAL.has(this.current.type)) {
       const op = this.next();
+      // "v EN ('a','e','i')": el conjunto escrito en el lugar. Se desazucara a
+      // (v = 'a') O (v = 'e') O (v = 'i'), que es exactamente lo que significa.
+      if (op.type === "EN" && this.check("(")) {
+        const abre = this.next();
+        const valores: Expr[] = [this.parseExpression()];
+        while (this.accept(",")) valores.push(this.parseExpression());
+        this.expect(")", '")" para cerrar el conjunto');
+        if (valores.length === 1) {
+          return { kind: "binary", pos: op.pos, op: "EN", left, right: valores[0] };
+        }
+        return valores
+          .map((v): Expr => ({ kind: "binary", pos: abre.pos, op: "=", left, right: v }))
+          .reduce((acc, cmp): Expr => ({ kind: "binary", pos: abre.pos, op: "O", left: acc, right: cmp }));
+      }
       const right = this.parseAdditive();
       return { kind: "binary", pos: op.pos, op: op.type, left, right };
     }

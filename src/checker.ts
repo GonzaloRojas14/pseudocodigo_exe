@@ -11,7 +11,7 @@ import type {
 import { diag, type Diagnostic } from "./diagnostics";
 import { enumerar, masParecido } from "./texto";
 
-export const BUILTIN_FUNCTIONS = new Set(["abso"]);
+export const BUILTIN_FUNCTIONS = new Set(["abso", "trunc", "redond"]);
 /** predicados de archivo/secuencia: se chequean acá, se ejecutan en la fase 2 */
 const FILE_PREDICATES = new Set(["fda", "nfda", "fds", "nfds"]);
 

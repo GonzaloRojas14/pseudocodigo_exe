@@ -731,9 +731,17 @@ class Interpreter {
               : (recurso as SecuenciaAbierta).fds;
           return key.startsWith("n") ? !fin : fin;
         }
-        if (key === "abso") {
-          if (expr.args.length !== 1) throw new RuntimeError("ABSO recibe un solo argumento.", expr.pos);
-          return Math.abs(numeric(await this.eval(expr.args[0], env), expr.pos));
+        if (key === "abso" || key === "trunc" || key === "redond") {
+          const nombre = key.toUpperCase();
+          if (expr.args.length !== 1) {
+            throw new RuntimeError(`${nombre} recibe un solo argumento.`, expr.pos);
+          }
+          const n = numeric(await this.eval(expr.args[0], env), expr.pos);
+          if (key === "abso") return Math.abs(n);
+          // TRUNC descarta los decimales (hacia cero): TRUNC(3.7) = 3, TRUNC(-3.7) = -3
+          if (key === "trunc") return Math.trunc(n);
+          // REDOND redondea al entero más cercano; el .5 va para arriba en valor absoluto
+          return Math.sign(n) * Math.round(Math.abs(n));
         }
         const sub = this.subprograms.get(key);
         if (!sub) throw new RuntimeError(`La función "${expr.callee}" no está declarada.`, expr.pos);

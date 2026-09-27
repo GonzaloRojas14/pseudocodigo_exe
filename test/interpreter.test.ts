@@ -1309,3 +1309,60 @@ test("una clave de orden que es REGISTRO se compara campo por campo, no como tex
 
   assert.deepStrictEqual(salida, ["600"]);
 });
+
+test("TRUNC y REDOND", async () => {
+  const salida = await execute(`
+    ACCION redondeos ES
+        Ambiente
+            a, b, c, d, e : real
+        Proceso
+            a := TRUNC(3.7)
+            b := REDOND(3.7)
+            c := TRUNC(-3.7)
+            d := REDOND(-3.7)
+            e := ABSO(-4)
+            ESCRIBIR(a, " ", b, " ", c, " ", d, " ", e)
+    FIN_ACCION
+  `);
+  assert.deepStrictEqual(salida, ["3 4 -3 -4 4"]);
+});
+
+test("una constante numérica sirve como límite de arreglo", async () => {
+  const salida = await execute(`
+    ACCION limites_constantes ES
+        Ambiente
+            N = 5
+            FILAS = 3
+            v : ARREGLO[1..N] de entero
+            m : ARREGLO[1..FILAS, 1..N] de entero
+            i : entero
+        Proceso
+            PARA i := 1 HASTA N HACER
+                v[i] := i * 2
+            FIN_PARA
+            m[3,5] := 99
+            ESCRIBIR(v[5], " ", m[3,5])
+    FIN_ACCION
+  `);
+  assert.deepStrictEqual(salida, ["10 99"]);
+});
+
+test("EN con el conjunto escrito en el lugar", async () => {
+  const salida = await execute(`
+    ACCION pertenencia ES
+        Ambiente
+            c : caracter
+            n : entero
+        Proceso
+            c := 'e'
+            SI (c EN ('a','e','i','o','u')) ENTONCES
+                ESCRIBIR("vocal")
+            FIN_SI
+            n := 7
+            SI (NO (n EN (2,4,6,8))) ENTONCES
+                ESCRIBIR("no esta")
+            FIN_SI
+    FIN_ACCION
+  `);
+  assert.deepStrictEqual(salida, ["vocal", "no esta"]);
+});

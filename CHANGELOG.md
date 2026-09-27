@@ -1,5 +1,20 @@
 # Cambios
 
+## 0.10.0
+
+- `TRUNC` y `REDOND` se pueden usar, como `ABSO`. Aparecen en las consignas del TP1.
+- Una constante numérica sirve como límite de arreglo: `N = 50` y después `V : ARREGLO[1..N] de entero`. Antes solo se aceptaban números escritos a mano.
+- `EN` acepta el conjunto escrito en el lugar: `SI (c EN ('a','e','i','o','u'))`. Ya andaba contra un texto y contra un arreglo.
+
+## 0.9.1
+
+- `arr` y `avz` dejan de ser palabras reservadas fijas: ahora son la primitiva de secuencias solo si vienen con paréntesis. `arr : arreglo de [1..200] de libro` fallaba con errores que no decían nada del problema real.
+
+## 0.9.0
+
+- Se aceptan las dos notaciones de la cátedra sin avisar nada: `FIN_SI` y `FinSi`, `Proceso` y `Algoritmo`. Mezclarlas tampoco es error — los propios materiales de la cátedra las mezclan.
+- Las claves de `ordenado por` que son un REGISTRO se comparan campo por campo, en el orden de declaración. Antes se comparaban como texto, así que un archivo ordenado por fecha se rechazaba porque el día 17 le quedaba antes que el 3.
+
 ## 0.8.1
 
 - Leer un archivo dentro de un registro de otro tipo ahora apunta a la declaración del archivo, en vez de fallar mucho después con un campo que no existe.
