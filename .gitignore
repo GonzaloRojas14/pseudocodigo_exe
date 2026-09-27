@@ -6,3 +6,6 @@ dist/
 
 # borradores personales: no se publican ni en el repo ni en el .vsix
 ejemplos/pruebas/
+
+# instructivo propio de publicacion: no va al repo publico
+PUBLICAR.md
