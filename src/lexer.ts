@@ -200,6 +200,13 @@ const NAME_PART = /[\p{L}\p{N}_]/u;
 /** nombres "sueltos" de ACCION/FUNCION/PROCEDIMIENTO, que en la práctica llevan puntos: ej2.2.1 */
 const LOOSE_NAME_PART = /[\p{L}\p{N}_.]/u;
 
+/**
+ * Palabras clave que solo cuentan como tales si están invocadas con paréntesis.
+ * Fuera de eso son identificadores comunes: "arr" es el nombre más habitual para
+ * un arreglo y "avz" aparece como variable en apuntes.
+ */
+const PRIMITIVAS_AMBIGUAS = new Set(["arr", "avz"]);
+
 export interface LexResult {
   tokens: Token[];
   notes: LexNote[];
@@ -350,7 +357,18 @@ export function tokenize(source: string): LexResult {
       }
 
       const lower = word.toLowerCase();
-      const kw = KEYWORDS[lower];
+      let kw: (typeof KEYWORDS)[string] | undefined = KEYWORDS[lower];
+
+      // Primitivas de secuencia que además son nombres de variable naturalísimos.
+      // "arr" es ARR(sec) —arrancar—, pero también es como todo el mundo llama a
+      // un arreglo; las filminas de la cátedra usan las dos cosas. Se resuelve por
+      // contexto: es la primitiva solo si viene seguida de "(". Mismo criterio que
+      // se usó con "sec".
+      if (kw && PRIMITIVAS_AMBIGUAS.has(lower)) {
+        const resto = source.slice(i);
+        if (!/^\s*\(/.test(resto)) kw = undefined;
+      }
+
       if (kw) {
         if (kw.note) notes.push({ pos: posAt(start, sl, sc), message: kw.note, severity: "warning" });
         const value = kw.type === "TIPO" ? TYPE_CANON[lower] : kw.type;

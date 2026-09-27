@@ -369,3 +369,45 @@ test("un SEGUN con rangos explica que eso va con SI ... SINO", () => {
     errors(source).join(" | ")
   );
 });
+
+test('"arr" se puede usar como nombre de variable: solo es ARR(sec) con paréntesis', () => {
+  // Las filminas de la cátedra escriben "arreglo de [1..7]" y la gente llama
+  // "arr" al arreglo. ARR es la primitiva de secuencias, pero solo invocada.
+  const source = `
+    ACCION nombres_ambiguos ES
+        AMBIENTE
+            libro = REGISTRO
+                nro : entero
+            FIN_REGISTRO
+            arr : arreglo de [1..200] de libro
+            sec : secuencia de caracter
+            v   : caracter
+            i   : entero
+        PROCESO
+            ARR(sec)
+            AVZ(sec, v)
+            PARA i := 1 HASTA 200 HACER
+                ESCRIBIR(arr[i].nro)
+            FIN_PARA
+    FIN_ACCION
+  `;
+  assert.deepEqual(errors(source), []);
+});
+
+test("las cuatro formas de declarar un arreglo que usa la cátedra", () => {
+  const source = `
+    ACCION formas_arreglo ES
+        AMBIENTE
+            a : arreglo de [1..7] de entero
+            b : arreglo[1..7] de entero
+            c : arreglo [1..3, 1..7] de entero
+            d : arreglo [1 .. 30] de real
+        PROCESO
+            a[1] := 0
+            b[1] := 0
+            c[1,1] := 0
+            d[1] := 0
+    FIN_ACCION
+  `;
+  assert.deepEqual(errors(source), []);
+});
