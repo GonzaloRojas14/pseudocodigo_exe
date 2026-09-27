@@ -12,6 +12,7 @@ import { ArchivoAbierto, SecuenciaAbierta, columnasDe, type SistemaDeArchivos } 
 import type {
   Declaration,
   Expr,
+  Param,
   Pos,
   Program,
   RecordDecl,
@@ -93,7 +94,109 @@ class Interpreter {
 
   async run(): Promise<void> {
     this.declare(this.program.declarations, this.globals);
+    this.cargarParametros();
     await this.execBlock(this.program.body, this.globals);
+  }
+
+  /**
+   * Los parámetros de la ACCION principal son datos EXTERNOS: la consigna dice
+   * "reciba como parámetro los 50 códigos de error", o "se cuenta con un vector
+   * de 6 posiciones con el costo por hora". No los produce el algoritmo, se los
+   * dan hechos. Acá se cargan desde la carpeta "<ejercicio>.datos/", igual que
+   * los archivos y las secuencias:
+   *
+   *   arreglo de registros  ->  <nombre>.tsv  (encabezado + una fila por elemento)
+   *   arreglo de escalares  ->  <nombre>.txt  (un valor por línea)
+   *   escalar               ->  <nombre>.txt  (un solo valor)
+   */
+  private cargarParametros(): void {
+    for (const param of this.program.params) {
+      const celda = new Cell(this.defaultValue(param.type, param.name), param.type);
+      this.globals.define(param.name, celda);
+
+      const fs = this.host.archivos;
+      if (!fs) {
+        throw new RuntimeError(
+          `La ACCION recibe "${param.name}" como parámetro, y esos datos vienen de afuera. ` +
+            "Guardá el algoritmo en un archivo para que se puedan buscar al lado.",
+          param.pos
+        );
+      }
+
+      const esArreglo = param.type.kind === "array";
+      const elemento = param.type.kind === "array" ? param.type.element : param.type;
+      const esRegistro =
+        elemento.kind === "named" && this.types.has(elemento.name.toLowerCase());
+      const extension = esRegistro ? ".tsv" : ".txt";
+      const contenido = fs.leer(param.name, extension);
+
+      if (contenido === undefined) {
+        throw new RuntimeError(
+          `No encontré los datos de "${param.name}", que la ACCION recibe como parámetro. ` +
+            `Tendría que estar en ${fs.ruta(param.name, extension)}. ` +
+            (esRegistro
+              ? "Una fila por elemento, con los nombres de los campos en la primera."
+              : "Un valor por línea.") +
+            ' Usá el comando "AED: Generar plantilla de datos" y cargalos ahí.',
+          param.pos
+        );
+      }
+
+      celda.value = esArreglo
+        ? this.arregloDesde(contenido, param, esRegistro)
+        : this.escalarDesde(contenido, param);
+    }
+  }
+
+  private arregloDesde(contenido: string, param: Param, esRegistro: boolean): Value {
+    const arreglo = this.defaultValue(param.type, param.name) as ArrayVal;
+    const type = param.type as Extract<TypeNode, { kind: "array" }>;
+    const elemento = type.element;
+
+    let valores: Value[];
+    if (esRegistro) {
+      const decl = this.types.get((elemento as { name: string }).name.toLowerCase())!;
+      const columnas = columnasDe(elemento, this.types, [], param.pos);
+      const archivo = new ArchivoAbierto(param.name, decl, columnas, () =>
+        this.defaultValue(elemento, param.name) as RecordVal
+      );
+      archivo.abrir("E", {
+        leer: () => contenido,
+        escribir: () => {},
+        ruta: (n, e) => `${n}${e}`,
+      }, param.pos);
+      valores = archivo.filas;
+    } else {
+      valores = contenido
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter((l) => l !== "")
+        .map((l) => this.coerce(this.parseInput(l, elemento, param.pos, param.name), elemento, param.pos, param.name));
+    }
+
+    const esperados = arreglo.data.length;
+    if (valores.length !== esperados) {
+      throw new RuntimeError(
+        `"${param.name}" está declarado con ${esperados} elemento(s) y el archivo de datos trae ${valores.length}. ` +
+          "Tienen que coincidir: el tamaño de un arreglo se fija al declararlo.",
+        param.pos
+      );
+    }
+    for (let i = 0; i < esperados; i++) arreglo.data[i] = valores[i];
+    return arreglo;
+  }
+
+  private escalarDesde(contenido: string, param: Param): Value {
+    const linea = contenido.split(/\r?\n/).find((l) => l.trim() !== "");
+    if (linea === undefined) {
+      throw new RuntimeError(`El archivo de datos de "${param.name}" está vacío.`, param.pos);
+    }
+    return this.coerce(
+      this.parseInput(linea.trim(), param.type, param.pos, param.name),
+      param.type,
+      param.pos,
+      param.name
+    );
   }
 
   // ── declaraciones ────────────────────────────────────────────────────────

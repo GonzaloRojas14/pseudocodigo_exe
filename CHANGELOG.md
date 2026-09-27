@@ -1,5 +1,11 @@
 # Cambios
 
+## 0.11.0
+
+- **La ACCION puede recibir datos externos por parámetro**, como los plantea la cátedra: "reciba como parámetro los 50 códigos de error", "se cuenta con un vector de 6 posiciones". Antes se podía escribir pero los valores llegaban en cero. Ahora se cargan desde la carpeta de datos: un arreglo de registros en `.tsv` con encabezado, un arreglo de escalares o un valor suelto en `.txt`, un valor por línea.
+- "AED: Generar plantilla de datos" crea también el archivo de cada parámetro.
+- Si el archivo de un parámetro falta, o trae más o menos elementos que el arreglo declarado, se explica en vez de seguir con datos vacíos.
+
 ## 0.10.0
 
 - `TRUNC` y `REDOND` se pueden usar, como `ABSO`. Aparecen en las consignas del TP1.

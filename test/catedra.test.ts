@@ -4,7 +4,7 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { execute, errors, type Archivos } from "./helpers";
+import { execute, errors, warnings, type Archivos } from "./helpers";
 
 // ── MEZCLA ────────────────────────────────────────────────────────────────
 
@@ -582,5 +582,111 @@ test("un límite de arreglo que no es constante se explica en vez de fallar raro
   assert.ok(
     errors(fuente).some((m) => /constante numérica|se fija al declararlo/i.test(m)),
     "el mensaje tiene que explicar por qué no puede ser una variable"
+  );
+});
+
+// ── PARÁMETROS DE LA ACCIÓN (datos externos) ──────────────────────────────
+
+test("la ACCION recibe un arreglo de escalares y un escalar por parámetro", async () => {
+  const salida = await execute(
+    `
+    ACCION con_externos(costo : ARREGLO[1..3] de real, anio : entero) ES
+        Ambiente
+            i : entero
+            total : real
+        Proceso
+            total := 0
+            PARA i := 1 HASTA 3 HACER
+                total := total + costo[i]
+            FIN_PARA
+            ESCRIBIR(anio, " ", total)
+    FIN_ACCION
+  `,
+    [],
+    { "costo.txt": "1200\n1500\n900\n", "anio.txt": "2026\n" }
+  );
+  assert.deepStrictEqual(salida, ["2026 3600"]);
+});
+
+test("la ACCION recibe un arreglo de REGISTROS: los 50 códigos de error del final", async () => {
+  const salida = await execute(
+    `
+    ACCION estad_errores(codigos : ARREGLO[1..3] de error_def) ES
+        Ambiente
+            error_def = REGISTRO
+                codigo      : AN(8)
+                descripcion : AN(30)
+            FIN_REGISTRO
+            i : entero
+        Proceso
+            PARA i := 1 HASTA 3 HACER
+                ESCRIBIR(codigos[i].codigo, " -> ", codigos[i].descripcion)
+            FIN_PARA
+    FIN_ACCION
+  `,
+    [],
+    {
+      "codigos.tsv":
+        "codigo\tdescripcion\nE001\tDivision por cero\nE002\tIndice fuera de rango\nE003\tArchivo no encontrado\n",
+    }
+  );
+  assert.deepStrictEqual(salida, [
+    "E001 -> Division por cero",
+    "E002 -> Indice fuera de rango",
+    "E003 -> Archivo no encontrado",
+  ]);
+});
+
+test("si faltan los datos de un parámetro, el mensaje dice dónde van", async () => {
+  await assert.rejects(
+    execute(
+      `
+      ACCION falta(costo : ARREGLO[1..3] de real) ES
+          Ambiente
+              i : entero
+          Proceso
+              ESCRIBIR(costo[1])
+      FIN_ACCION
+    `,
+      [],
+      {}
+    ),
+    /No encontré los datos de "costo".*recibe como parámetro.*costo\.txt.*Un valor por línea/s
+  );
+});
+
+test("si el archivo trae más o menos elementos que el arreglo declarado, se avisa", async () => {
+  await assert.rejects(
+    execute(
+      `
+      ACCION desajuste(costo : ARREGLO[1..3] de real) ES
+          Ambiente
+              i : entero
+          Proceso
+              ESCRIBIR(costo[1])
+      FIN_ACCION
+    `,
+      [],
+      { "costo.txt": "10\n20\n" }
+    ),
+    /declarado con 3 elemento\(s\) y el archivo de datos trae 2/
+  );
+});
+
+test("un parámetro no es una variable del Ambiente: no se avisa que nunca se asigna", () => {
+  const fuente = `
+    ACCION externos(v : ARREGLO[1..2] de entero) ES
+        Ambiente
+            i : entero
+        Proceso
+            PARA i := 1 HASTA 2 HACER
+                ESCRIBIR(v[i])
+            FIN_PARA
+    FIN_ACCION
+  `;
+  assert.deepStrictEqual(errors(fuente), []);
+  assert.ok(
+    !warnings(fuente).some((m) => /nunca se le asigna|no recibe parámetros|ya estaba declarada/.test(m)),
+    `avisos inesperados: ${warnings(fuente).join(" | ")}`
   );
 });

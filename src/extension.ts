@@ -180,9 +180,32 @@ async function generarDatos(): Promise<void> {
   };
   procesar(program.declarations);
 
+  // Los parámetros de la ACCION son datos externos y también necesitan su archivo:
+  // un arreglo de registros va en .tsv con encabezado, el resto en .txt.
+  for (const param of program.params) {
+    const elemento = param.type.kind === "array" ? param.type.element : param.type;
+    const esRegistro = elemento.kind === "named" && tipos.has(elemento.name.toLowerCase());
+    const extension = esRegistro ? ".tsv" : ".txt";
+    const destino = path.join(carpeta, param.name + extension);
+    if (fs.existsSync(destino)) {
+      existentes.push(param.name + extension);
+      continue;
+    }
+    try {
+      const contenido = esRegistro
+        ? columnasDe(elemento, tipos, [], param.pos).map((c) => c.titulo).join("\t") + "\n"
+        : "";
+      fs.mkdirSync(carpeta, { recursive: true });
+      fs.writeFileSync(destino, contenido, "utf8");
+      creados.push(param.name + extension);
+    } catch (err) {
+      problemas.push(`${param.name}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
   if (creados.length === 0 && existentes.length === 0) {
     void vscode.window.showInformationMessage(
-      "Este algoritmo no declara ningún ARCHIVO ni SECUENCIA, así que no necesita datos."
+      "Este algoritmo no declara ningún ARCHIVO ni SECUENCIA, ni recibe parámetros, así que no necesita datos."
     );
     return;
   }

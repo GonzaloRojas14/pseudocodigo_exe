@@ -249,14 +249,10 @@ class Parser {
     const accion = this.abrirBloque(this.expect("ACCION", "ACCION al inicio del algoritmo"));
     const { name, pos: namePos } = this.identName("el nombre de la acción");
 
-    // en algunos apuntes la ACCION se plantea con parámetros, como si fuera una subacción
+    // La ACCION puede recibir datos externos: la cátedra plantea ejercicios que
+    // arrancan con "reciba como parámetro los 50 códigos de error". Los valores
+    // se cargan desde la carpeta de datos, igual que los archivos.
     const params = this.parseParams();
-    if (params.length > 0) {
-      this.warn(
-        "La ACCION principal no recibe parámetros: se toman como variables del Ambiente.",
-        namePos
-      );
-    }
 
     if (this.check("IDENT")) {
       this.warn(
@@ -271,14 +267,11 @@ class Parser {
     }
     this.skipStrayColon("ACCION ... ES");
 
-    let declarations: Declaration[] = params.map((param) => ({
-      kind: "var" as const,
-      pos: param.pos,
-      names: [param.name],
-      type: param.type,
-    }));
+    // Los parámetros NO se convierten en variables del Ambiente: el intérprete
+    // los define aparte y les carga los datos externos.
+    let declarations: Declaration[] = [];
     if (this.accept("AMBIENTE")) {
-      declarations = [...declarations, ...this.parseDeclarations()];
+      declarations = this.parseDeclarations();
     } else {
       this.warn("Falta el Ambiente: va siempre, aunque quede vacío (sintaxis-completa §1).", this.current.pos);
     }
@@ -299,6 +292,7 @@ class Parser {
       pos: accion.pos,
       name,
       namePos,
+      params,
       declarations,
       body,
       notations,

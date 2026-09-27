@@ -50,6 +50,7 @@ FIN_ACCION
 
 Un `ARCHIVO` o una `SECUENCIA` no tienen los datos adentro del algoritmo, así que van al lado, en una carpeta `<ejercicio>.datos/`:
 
+- si la `ACCION` recibe datos por parámetro (`ACCION estadistica(codigos : ARREGLO[1..50] de error_def) ES`), cada parámetro se carga de su propio archivo: `.tsv` con encabezado si es un arreglo de registros, `.txt` con un valor por línea si no;
 - un `ARCHIVO de alumno` lee `alumno.tsv`: una columna por campo (los registros anidados se aplanan, `fecha_nac.anio`) y una fila por registro, separadas por tabulaciones;
 - una `SECUENCIA de caracter` lee un `.txt` con la cinta tal cual, con sus espacios y sus marcas de fin.
 

@@ -77,6 +77,15 @@ class Checker {
         `El nombre de la ACCION no lleva puntos ni espacios: "${this.program.name}" iría como "${this.program.name.replace(/\./g, "_")}" (errores-y-trampas #26).`
       );
     }
+    // Los parámetros de la ACCION son datos externos: la consigna los da por
+    // recibidos y el intérprete los carga desde la carpeta de datos. No hace
+    // falta (ni se puede) asignarlos dentro del algoritmo.
+    for (const param of this.program.params) {
+      this.global.declare({ name: param.name, kind: "param", pos: param.pos, type: param.type });
+      this.inicializados.add(param.name.toLowerCase());
+      this.assigned.add(param.name.toLowerCase());
+    }
+
     this.collectDeclarations(this.program.declarations, this.global);
 
     for (const decl of this.program.declarations) {

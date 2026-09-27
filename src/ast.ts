@@ -282,6 +282,8 @@ export interface ExisteExpr extends Node {
 export interface Program extends Node {
   name: string;
   namePos: Pos;
+  /** datos externos que la ACCION recibe: "reciba como parámetro los 50 códigos" */
+  params: Param[];
   declarations: Declaration[];
   body: Stmt[];
   /** notación detectada: "moderna" (Proceso/SINO/FIN_SI) y/o "vieja" (Algoritmo/Contrario/FinSi) */
