@@ -9,6 +9,14 @@
     "url": "https://instagram.com/gonza._007"
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GonzaloRojas14/pseudocodigo_exe.git"
+  },
+  "homepage": "https://github.com/GonzaloRojas14/pseudocodigo_exe#readme",
+  "bugs": {
+    "url": "https://github.com/GonzaloRojas14/pseudocodigo_exe/issues"
+  },
   "icon": "icon.png",
   "galleryBanner": {
     "color": "#1E202C",

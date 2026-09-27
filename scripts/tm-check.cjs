@@ -3,7 +3,7 @@ const path = require("node:path");
 const oniguruma = require("vscode-oniguruma");
 const textmate = require("vscode-textmate");
 
-const ROOT = "/Users/gonzalo/Desktop/Estudios/Algoritmos/aed-vscode";
+const ROOT = path.resolve(__dirname, "..");
 const wasm = fs.readFileSync(path.join(ROOT, "node_modules/vscode-oniguruma/release/onig.wasm"));
 
 const vscodeOnigurumaLib = oniguruma.loadWASM(wasm.buffer).then(() => ({

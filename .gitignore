@@ -3,3 +3,6 @@ dist/
 *.vsix
 .DS_Store
 .vscode-test/
+
+# borradores personales: no se publican ni en el repo ni en el .vsix
+ejemplos/pruebas/
