@@ -102,7 +102,9 @@ costo_hora.txt          mes.txt
 900
 ```
 
-Un **parámetro puntero** (`ACCION ELIM ES (VALOR: entero, PRIM: Puntero a NODO)`) es una lista que te dan hecha. Va en `PRIM.tsv`, **un nodo por fila en el orden de la lista**, con los campos del nodo como columnas y **sin los punteros**, que se enlazan solos: los campos que empiezan con `ant` apuntan al nodo anterior y el resto al siguiente. Si además recibe un `ULT` sin archivo propio, apunta al último nodo. Un archivo con el encabezado solo es la lista vacía.
+Un **parámetro puntero** (`ACCION ELIM ES (VALOR: entero, PRIM: Puntero a NODO)`) es una lista que te dan hecha. Va en `PRIM.tsv`, **un nodo por fila en el orden de la lista**, con los campos del nodo como columnas y **sin los punteros**, que se enlazan solos: los campos que empiezan con `ant` apuntan al nodo anterior y el resto al siguiente. Si además recibe un `ULT` (`PRIM, ULT: Puntero a NODO`), no lleva archivo: apunta al último nodo de esa misma lista. Un archivo con el encabezado solo es la lista vacía. "AED: Generar plantilla de datos" crea el `PRIM.tsv` con las columnas del nodo, y ninguno para `ULT`.
+
+Un **registro suelto** como parámetro (`N: NODO`) va en `N.tsv` con el encabezado y una sola fila.
 
 ```
 PRIM.tsv

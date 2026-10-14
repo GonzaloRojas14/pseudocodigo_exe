@@ -1,4 +1,4 @@
-import type { Pos, RecordDecl, TypeNode } from "./ast";
+import type { Param, Pos, RecordDecl, TypeNode } from "./ast";
 import { RecordVal, RuntimeError, formatValue, type Archivo, type Secuencia, type Value } from "./valores";
 
 /**
@@ -10,6 +10,18 @@ export interface SistemaDeArchivos {
   leer(nombre: string, extension: string): string | undefined;
   escribir(nombre: string, extension: string, contenido: string): void;
   ruta(nombre: string, extension: string): string;
+}
+
+/**
+ * ULT en "ACCION X ES (PRIM, ULT: Puntero a NODO)": es el último nodo de la misma
+ * lista que PRIM, no una lista aparte. No lleva archivo de datos: apunta solo.
+ */
+export function esUltimoDeLaLista(params: Param[], i: number): boolean {
+  const tipo = params[i].type;
+  if (tipo.kind !== "puntero" || !/^ult/i.test(params[i].name)) return false;
+  return params
+    .slice(0, i)
+    .some((p) => p.type.kind === "puntero" && p.type.target.toLowerCase() === tipo.target.toLowerCase());
 }
 
 /** una columna del TSV: una hoja del registro, con su camino de campos */

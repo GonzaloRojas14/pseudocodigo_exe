@@ -11,7 +11,7 @@ import {
   type Value,
 } from "./valores";
 export { ArrayVal, CancelledError, NIL, Nodo, RecordVal, RuntimeError, formatValue, type Value } from "./valores";
-import { ArchivoAbierto, SecuenciaAbierta, columnasDe, type SistemaDeArchivos } from "./archivos";
+import { ArchivoAbierto, SecuenciaAbierta, columnasDe, esUltimoDeLaLista, type SistemaDeArchivos } from "./archivos";
 import type {
   Declaration,
   Expr,
@@ -115,7 +115,7 @@ class Interpreter {
    *   escalar               ->  <nombre>.txt  (un solo valor)
    */
   private cargarParametros(): void {
-    for (const param of this.program.params) {
+    for (const [i, param] of this.program.params.entries()) {
       const celda = new Cell(this.defaultValue(param.type, param.name), param.type);
       this.globals.define(param.name, celda);
 
@@ -129,7 +129,11 @@ class Interpreter {
       }
 
       if (param.type.kind === "puntero") {
-        celda.value = this.listaDesde(param, fs);
+        const lista = this.ultimaLista;
+        celda.value =
+          esUltimoDeLaLista(this.program.params, i) && lista
+            ? (lista.nodos[lista.nodos.length - 1] ?? NIL)
+            : this.listaDesde(param, fs);
         continue;
       }
 
@@ -154,7 +158,9 @@ class Interpreter {
 
       celda.value = esArreglo
         ? this.arregloDesde(contenido, param, esRegistro)
-        : this.escalarDesde(contenido, param);
+        : esRegistro
+          ? this.registroDesde(contenido, param)
+          : this.escalarDesde(contenido, param);
     }
   }
 
@@ -162,7 +168,7 @@ class Interpreter {
    * "ACCION ELIM ES (VALOR: entero, PRIM: Puntero a NODO)": la lista ya existe y se
    * la dan hecha. Se carga de <nombre>.tsv, un nodo por fila en el orden de la lista,
    * y los punteros se enlazan solos: los campos "ant..." al anterior, los demás al
-   * siguiente. Un ULT sin archivo propio apunta al último nodo de la lista ya cargada.
+   * siguiente. Un ULT (esUltimoDeLaLista) no lleva archivo: apunta al último nodo.
    */
   private ultimaLista: { tipo: string; nodos: Nodo[] } | undefined;
 
@@ -173,10 +179,6 @@ class Interpreter {
     const contenido = fs.leer(param.name, ".tsv");
 
     if (contenido === undefined) {
-      const lista = this.ultimaLista;
-      if (/^ult/i.test(param.name) && lista && lista.tipo.toLowerCase() === registro.name.toLowerCase()) {
-        return lista.nodos[lista.nodos.length - 1] ?? NIL;
-      }
       throw new RuntimeError(
         `No encontré los nodos de la lista "${param.name}", que la ACCION recibe como parámetro. ` +
           `Tendría que estar en ${fs.ruta(param.name, ".tsv")}: una fila por nodo, en el orden de la lista, ` +
@@ -246,6 +248,24 @@ class Interpreter {
     }
     for (let i = 0; i < esperados; i++) arreglo.data[i] = valores[i];
     return arreglo;
+  }
+
+  /** un registro suelto (N: NODO): el .tsv trae el encabezado y una sola fila */
+  private registroDesde(contenido: string, param: Param): Value {
+    const tipo = param.type as Extract<TypeNode, { kind: "named" }>;
+    const decl = this.types.get(tipo.name.toLowerCase())!;
+    const archivo = new ArchivoAbierto(param.name, decl, columnasDe(tipo, this.types, [], param.pos), () =>
+      this.defaultValue(tipo, param.name) as RecordVal
+    );
+    archivo.abrir("E", { leer: () => contenido, escribir: () => {}, ruta: (n, e) => `${n}${e}` }, param.pos);
+    if (archivo.filas.length !== 1) {
+      throw new RuntimeError(
+        `"${param.name}" es un solo registro ${decl.name}, y su archivo de datos trae ${archivo.filas.length} fila(s). ` +
+          "Va el encabezado con los campos y una única fila con los valores.",
+        param.pos
+      );
+    }
+    return archivo.filas[0];
   }
 
   private escalarDesde(contenido: string, param: Param): Value {

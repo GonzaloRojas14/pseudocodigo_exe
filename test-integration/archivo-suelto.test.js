@@ -187,6 +187,48 @@ describe("Archivos y secuencias en VS Code de verdad", () => {
     assert.equal(fs.readFileSync(esperado, "utf8").trim(), "sucursal\timporte");
   });
 
+  const PROGRAMA_LISTA = [
+    "ACCION lista ES(PRIM, ULT: Puntero a NODO, N: NODO);",
+    "  AMBIENTE",
+    "  FECHA = REGISTRO",
+    "    anio: entero;",
+    "    mes: 1..12;",
+    "  FIN REGISTRO;",
+    "  NODO = REGISTRO",
+    "    legajo: entero;",
+    "    fecha: FECHA;",
+    "    prox: Puntero a NODO;",
+    "    ant: Puntero a NODO;",
+    "  FIN REGISTRO;",
+    "PROCESO",
+    '  ESCRIBIR("primero ", *PRIM.legajo, " ultimo ", *ULT.legajo, " suelto ", N.legajo);',
+    "FIN ACCION.",
+    "",
+  ].join("\n");
+
+  it("con una lista por parámetro, la plantilla es PRIM.tsv con los campos del nodo (sin punteros) y ULT no lleva archivo", async () => {
+    const uri = escribir("lista.frre", PROGRAMA_LISTA);
+    const document = await vscode.workspace.openTextDocument(uri);
+    await vscode.window.showTextDocument(document);
+
+    await vscode.commands.executeCommand("aed.generarDatos");
+
+    const datos = path.join(afuera, "lista.datos");
+    await esperarA("que se cree PRIM.tsv", () => fs.existsSync(path.join(datos, "PRIM.tsv")));
+    assert.equal(fs.readFileSync(path.join(datos, "PRIM.tsv"), "utf8").trim(), "legajo\tfecha.anio\tfecha.mes");
+    assert.equal(fs.readFileSync(path.join(datos, "N.tsv"), "utf8").trim(), "legajo\tfecha.anio\tfecha.mes");
+    assert.ok(!fs.existsSync(path.join(datos, "ULT.tsv")), "ULT no tendría que tener archivo");
+
+    // con la plantilla completada, la lista se arma y ULT apunta al último nodo
+    fs.appendFileSync(path.join(datos, "PRIM.tsv"), "10\t2026\t3\n20\t2026\t4\n30\t2026\t5\n");
+    fs.appendFileSync(path.join(datos, "N.tsv"), "99\t2025\t1\n");
+    const pty = await api.ejecutar();
+    const salida = capturar(pty);
+    pty.open();
+    await esperarA("que termine", () => pty.finalizado);
+    assert.match(salida(), /primero 10 ultimo 30 suelto 99/, salida());
+  });
+
   it("y con los datos cargados, el algoritmo los lee y suma", async () => {
     const uri = escribir("ventas2.frre", PROGRAMA_ARCHIVO);
     fs.mkdirSync(path.join(afuera, "ventas2.datos"), { recursive: true });

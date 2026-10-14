@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
-import { columnasDe, type SistemaDeArchivos } from "./archivos";
+import { columnasDe, esUltimoDeLaLista, type SistemaDeArchivos } from "./archivos";
 import type { Declaration, Program, RecordDecl, TypeNode } from "./ast";
 import { check } from "./checker";
 import type { Diagnostic } from "./diagnostics";
@@ -182,7 +182,9 @@ async function generarDatos(): Promise<void> {
 
   // Los parámetros de la ACCION son datos externos y también necesitan su archivo:
   // un arreglo de registros va en .tsv con encabezado, el resto en .txt.
-  for (const param of program.params) {
+  for (const [i, param] of program.params.entries()) {
+    // ULT apunta al último nodo de la lista de PRIM: no tiene archivo propio
+    if (esUltimoDeLaLista(program.params, i)) continue;
     const elemento: TypeNode =
       param.type.kind === "array"
         ? param.type.element

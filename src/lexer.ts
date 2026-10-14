@@ -113,6 +113,8 @@ const KEYWORDS: Record<string, KeywordSpec> = {
     note: "Se escribe RE-ESCRIBIR, con guión (errores-y-trampas #23).",
   },
   eliminar: { type: "ELIMINAR" },
+  // la teoría de actualización indexada de la cátedra usa BORRAR para la baja física
+  borrar: { type: "ELIMINAR" },
   cerrar: { type: "CERRAR" },
   fda: { type: "FDA", notation: "moderna" },
   nfda: { type: "NFDA", notation: "moderna" },

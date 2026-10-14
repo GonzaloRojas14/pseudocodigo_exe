@@ -5,6 +5,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { errors, execute, warnings, type Archivos } from "./helpers";
+import { parse } from "../src/parser";
+import { columnasDe } from "../src/archivos";
+import type { RecordDecl } from "../src/ast";
 
 const NODO = `
         NODO = REGISTRO
@@ -290,4 +293,100 @@ test("un * al principio de línea sigue siendo multiplicación si no va pegado a
             ESCRIBIR(x)
     FIN_ACCION`);
   assert.deepStrictEqual(salida, ["6"]);
+});
+
+test("PRIM.tsv toma la forma del registro NODO: varios campos y registros anidados, sin los punteros", async () => {
+  const archivos: Archivos = {
+    "PRIM.tsv":
+      "legajo\tnombre\tnota\tfecha.anio\tfecha.mes\n" +
+      "101\tAna Paz\t8.5\t2026\t3\n" +
+      "205\tBeto Gil\t6\t2025\t11\n",
+  };
+  const salida = await execute(
+    `
+    ACCION ALUMNOS ES(PRIM: PUNTERO A NODO);
+      AMBIENTE
+      FECHA = REGISTRO
+        anio: entero;
+        mes: 1..12;
+      FIN REGISTRO;
+      NODO = REGISTRO
+        legajo: entero;
+        nombre: AN(30);
+        nota: real;
+        fecha: FECHA;
+        prox: PUNTERO A NODO;
+      FIN REGISTRO;
+      P: PUNTERO A NODO;
+    PROCESO
+      P := PRIM;
+      MIENTRAS P <> NIL HACER
+        ESCRIBIR(*P.legajo, " ", *P.nombre, " ", *P.nota, " ", *P.fecha.mes, "/", *P.fecha.anio);
+        P := *P.prox;
+      FIN MIENTRAS;
+    FIN ACCION.
+  `,
+    [],
+    archivos
+  );
+  assert.deepStrictEqual(salida, ["101 Ana Paz 8.5 3/2026", "205 Beto Gil 6 11/2025"]);
+});
+
+test("la plantilla de PRIM.tsv lleva las columnas del NODO y no los punteros", () => {
+  const fuente = `
+    ACCION t ES(PRIM: PUNTERO A NODO);
+      AMBIENTE
+      NODO = REGISTRO
+        legajo: entero;
+        nombre: AN(30);
+        prox: PUNTERO A NODO;
+        ant: PUNTERO A NODO;
+      FIN REGISTRO;
+    PROCESO
+    FIN ACCION.`;
+  const { program } = parse(fuente);
+  assert.ok(program);
+  const tipos = new Map(
+    program.declarations.filter((d) => d.kind === "record").map((d) => [d.name.toLowerCase(), d as RecordDecl])
+  );
+  const columnas = columnasDe({ kind: "named", name: "NODO", pos: program.pos }, tipos).map((c) => c.titulo);
+  assert.deepStrictEqual(columnas, ["legajo", "nombre"]);
+});
+
+test("ULT apunta al último nodo de PRIM aunque haya un ULT.tsv (no es una lista aparte)", async () => {
+  const archivos: Archivos = { "PRIM.tsv": "dato\n1\n2\n3\n", "ULT.tsv": "dato\n" };
+  const salida = await execute(
+    `
+    ACCION t ES(PRIM, ULT: PUNTERO A NODO);
+      AMBIENTE
+      NODO = REGISTRO
+        dato: entero;
+        prox: PUNTERO A NODO;
+      FIN REGISTRO;
+    PROCESO
+      ESCRIBIR(*ULT.dato, " ", *ULT.prox);
+    FIN ACCION.`,
+    [],
+    archivos
+  );
+  assert.deepStrictEqual(salida, ["3 NIL"]);
+});
+
+test("un registro suelto por parámetro (N: NODO) se carga del .tsv: encabezado y una fila", async () => {
+  const fuente = `
+    ACCION t ES(N: NODO);
+      AMBIENTE
+      NODO = REGISTRO
+        legajo: entero;
+        nombre: AN(20);
+        prox: PUNTERO A NODO;
+      FIN REGISTRO;
+    PROCESO
+      ESCRIBIR(N.legajo, " ", N.nombre, " ", N.prox);
+    FIN ACCION.`;
+  assert.deepStrictEqual(await execute(fuente, [], { "N.tsv": "legajo\tnombre\n101\tAna\n" }), ["101 Ana NIL"]);
+  await assert.rejects(
+    execute(fuente, [], { "N.tsv": "legajo\tnombre\n101\tAna\n102\tBeto\n" }),
+    /un solo registro NODO.*2 fila/
+  );
 });

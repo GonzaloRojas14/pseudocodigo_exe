@@ -690,3 +690,33 @@ test("un parámetro no es una variable del Ambiente: no se avisa que nunca se as
     `avisos inesperados: ${warnings(fuente).join(" | ")}`
   );
 });
+
+test("BORRAR es la baja física, como la escribe la teoría de la cátedra", async () => {
+  const archivos: Archivos = { "mae.tsv": "clave\tnombre\n10\tAna\n20\tBeto\n" };
+  const salida = await execute(
+    `
+    ACCION baja_fisica ES
+        Ambiente
+            reg = REGISTRO
+                clave  : entero
+                nombre : AN(20)
+            FIN_REGISTRO
+            mae : ARCHIVO de reg INDEXADO por clave
+            r : reg
+        Proceso
+            ABRIR E/S(mae)
+            r.clave := 10
+            LEER(mae, r)
+            SI EXISTE ENTONCES
+                BORRAR(mae, r)          // la cátedra usa BORRAR; ELIMINAR es sinónimo
+                ESCRIBIR("borrado ", r.nombre)
+            FIN_SI
+            CERRAR(mae)
+    FIN_ACCION
+  `,
+    [],
+    archivos
+  );
+  assert.deepStrictEqual(salida, ["borrado Ana"]);
+  assert.strictEqual(archivos["mae.tsv"], "clave\tnombre\n20\tBeto\n");
+});
