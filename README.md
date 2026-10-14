@@ -102,6 +102,16 @@ costo_hora.txt          mes.txt
 900
 ```
 
+Un **parámetro puntero** (`ACCION ELIM ES (VALOR: entero, PRIM: Puntero a NODO)`) es una lista que te dan hecha. Va en `PRIM.tsv`, **un nodo por fila en el orden de la lista**, con los campos del nodo como columnas y **sin los punteros**, que se enlazan solos: los campos que empiezan con `ant` apuntan al nodo anterior y el resto al siguiente. Si además recibe un `ULT` sin archivo propio, apunta al último nodo. Un archivo con el encabezado solo es la lista vacía.
+
+```
+PRIM.tsv
+DATO
+3
+5
+8
+```
+
 ### Lo que pasa al ejecutar
 
 Los **archivos de salida** (`ABRIR /S`, `CREAR`) se escriben en esa misma carpeta al `CERRAR`, así que después de correr el algoritmo los abrís y ves lo que generó.
@@ -122,8 +132,10 @@ Valen lo mismo que en la cátedra: se prenden cuando el último `LEER` o `AVZ` *
 
 Un archivo `INDEXADO por clave` se accede por clave, no se recorre: se carga la clave en el registro, se hace `LEER`, se pregunta `SI EXISTE` y recién ahí se opera (`ESCRIBIR` da de alta, `RE-ESCRIBIR` modifica, `ELIMINAR` da de baja física).
 
-**Todavía no se ejecuta:** las listas con punteros (`Puntero a`, `nil`, `NUEVO`), de la unidad 4.
+**Listas con punteros**: `Puntero a NODO`, `NIL`, `NUEVO(p)` y `DISPONER(p)`. Al nodo apuntado se accede con `*p.dato` o con `p^.dato` (significan lo mismo), y se anida con paréntesis: `*(*p.ant).prox := q`. Corren las listas simples, dobles y circulares, las cargas apilada, encolada y ordenada, y los cuatro casos de inserción y de eliminación tal como están en las filminas, incluidos los `{ comentarios }` entre llaves y los cierres con espacio (`FIN SI`, `FIN REGISTRO`).
+
+Los errores típicos se explican en vez de colgarse: usar `*p` cuando `p` vale `NIL`, usar un nodo después de `DISPONER`, guardar un dato en el puntero en lugar de en el nodo, o escribir `p.dato` sin el `*`. `ESCRIBIR(p)` muestra la dirección del nodo (`0x1000`) o `NIL`.
 
 ## Ejemplos incluidos
 
-La extensión trae ejemplos listos para abrir y ejecutar, con sus datos ya cargados: un demo del lenguaje, corte de control de tres niveles sobre 1000 registros, un ABM indexado completo, recorrido de secuencias, y un ejercicio que recibe los datos por parámetro.
+La extensión trae ejemplos listos para abrir y ejecutar, con sus datos ya cargados: un demo del lenguaje, corte de control de tres niveles sobre 1000 registros, un ABM indexado completo, recorrido de secuencias, un ejercicio que recibe los datos por parámetro, y una lista con punteros (carga ordenada, recorrido y baja).

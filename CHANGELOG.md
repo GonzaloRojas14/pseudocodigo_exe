@@ -1,5 +1,13 @@
 # Cambios
 
+## 0.12.0
+
+- **Se ejecutan las listas con punteros**: `Puntero a NODO`, `NIL`, `NUEVO(p)`, `DISPONER(p)`, y el nodo apuntado escrito `*p.dato` o `p^.dato`, anidado con paréntesis como en `*(*p.ant).prox := q`. Corren las listas simples, dobles y circulares y los cuatro casos de inserción y eliminación de las filminas.
+- Errores explicados: acceder a `*p` con `p = NIL`, usar un nodo después de `DISPONER`, asignarle un dato a un puntero, comparar punteros con `<`. El checker avisa `p.dato` sin `*`, un `*` sobre algo que no es puntero, y el recorrido que se olvida de avanzar con `p := *p.prox`.
+- Un parámetro `Puntero a NODO` de la ACCION recibe la lista hecha desde `<nombre>.tsv`, un nodo por fila; un `ULT` sin archivo apunta al último nodo.
+- Se aceptan los comentarios entre llaves `{ CASO 1 }`, los cierres con espacio (`FIN SI`, `FIN MIENTRAS`, `FIN REGISTRO`), los parámetros después del `ES` (`ACCION ELIM ES (...)`), y varios nombres con el mismo tipo en los parámetros (`PRIM, ULT: Puntero a NODO`).
+- Ejemplo nuevo: `listas.frre`.
+
 ## 0.11.1
 
 - La página de la extensión explica en detalle de dónde salen los datos, el comando que genera las plantillas y los tres formatos, con ejemplos.

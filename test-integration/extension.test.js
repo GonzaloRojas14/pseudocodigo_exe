@@ -32,7 +32,7 @@ async function abrir(nombre, contenido) {
 
 describe("Integración con VS Code", () => {
   before(async () => {
-    const extension = vscode.extensions.getExtension("gonzalo.aed-pseudocodigo");
+    const extension = vscode.extensions.getExtension("RojasGonzalo007.aed-pseudocodigo");
     assert.ok(extension, "la extensión no está instalada en esta instancia de VS Code");
     await extension.activate();
   });

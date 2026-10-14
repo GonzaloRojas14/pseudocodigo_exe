@@ -32,6 +32,8 @@ export function columnasDe(
       columnasDe(campo.type, tipos, [...prefijo, campo.name], pos)
     );
   }
+  // los punteros no se guardan en una tabla: el enlace entre nodos se arma al cargar
+  if (tipo.kind === "puntero") return [];
   if (tipo.kind === "array" || tipo.kind === "archivo" || tipo.kind === "secuencia") {
     throw new RuntimeError(
       `El campo "${prefijo.join(".")}" es ${tipo.kind === "array" ? "un arreglo" : "un archivo"}, ` +

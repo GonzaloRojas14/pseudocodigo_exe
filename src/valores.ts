@@ -43,7 +43,25 @@ export class ArrayVal {
   }
 }
 
-export type Value = number | string | boolean | RecordVal | ArrayVal | Archivo | Secuencia;
+/**
+ * Un nodo pedido con NUEVO. El puntero ES la referencia a este objeto: copiar un
+ * puntero (p := q) copia la referencia, no el nodo, y así los dos apuntan al mismo.
+ */
+export class Nodo {
+  liberado = false;
+  constructor(
+    /** dirección de memoria simulada, para mostrarla al hacer ESCRIBIR(p) */
+    readonly direccion: number,
+    readonly tipo: string,
+    public valor: Value
+  ) {}
+}
+
+/** NIL: el puntero que no apunta a ningún nodo */
+export class Nil {}
+export const NIL = new Nil();
+
+export type Value = number | string | boolean | RecordVal | ArrayVal | Archivo | Secuencia | Nodo | Nil;
 
 /** lo que devuelve una variable declarada ARCHIVO o SECUENCIA: la asigna el módulo archivos */
 export interface Archivo {
@@ -87,5 +105,7 @@ export function formatValue(value: Value): string {
   if (value instanceof ArrayVal) return `[${value.data.map(formatValue).join(", ")}]`;
   if (esArchivo(value)) return `<archivo ${value.nombre}>`;
   if (esSecuencia(value)) return `<secuencia ${value.nombre}>`;
+  if (value instanceof Nodo) return `0x${value.direccion.toString(16).toUpperCase()}`;
+  if (value instanceof Nil) return "NIL";
   return value;
 }

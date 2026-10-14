@@ -20,6 +20,7 @@ export type TypeNode =
   | ArrayType
   | ArchivoType
   | SecuenciaType
+  | PunteroType
   | NamedType;
 
 export interface ScalarType extends Node {
@@ -69,6 +70,12 @@ export interface ArchivoType extends Node {
 export interface SecuenciaType extends Node {
   kind: "secuencia";
   element: TypeNode;
+}
+
+/** Puntero a NODO: el nombre del registro al que apunta (puede declararse más abajo) */
+export interface PunteroType extends Node {
+  kind: "puntero";
+  target: string;
 }
 
 /** referencia a un tipo REGISTRO declarado antes */
@@ -131,7 +138,8 @@ export type Stmt =
   | ForStmt
   | IoStmt
   | CallStmt
-  | FileStmt;
+  | FileStmt
+  | PunteroStmt;
 
 export interface AssignStmt extends Node {
   kind: "assign";
@@ -203,6 +211,13 @@ export interface FileStmt extends Node {
   args: Expr[];
 }
 
+/** NUEVO(p) pide un nodo y deja a p apuntándolo; DISPONER(p) libera el nodo */
+export interface PunteroStmt extends Node {
+  kind: "puntero";
+  op: "NUEVO" | "DISPONER";
+  target: LValue;
+}
+
 // ── Expresiones ────────────────────────────────────────────────────────────
 
 export type Expr =
@@ -215,10 +230,12 @@ export type Expr =
   | CallExpr
   | UnaryExpr
   | BinaryExpr
-  | ExisteExpr;
+  | ExisteExpr
+  | NilLit
+  | DerefExpr;
 
 /** lo que puede ir a la izquierda de := o dentro de un LEER */
-export type LValue = Ident | FieldAccess | IndexAccess;
+export type LValue = Ident | FieldAccess | IndexAccess | DerefExpr;
 
 export interface NumberLit extends Node {
   kind: "number";
@@ -270,6 +287,16 @@ export interface BinaryExpr extends Node {
   op: string;
   left: Expr;
   right: Expr;
+}
+
+export interface NilLit extends Node {
+  kind: "nil";
+}
+
+/** el nodo apuntado: *p o p^ (las dos significan lo mismo) */
+export interface DerefExpr extends Node {
+  kind: "deref";
+  target: Expr;
 }
 
 /** SI EXISTE ENTONCES — resultado del último LEER sobre un indexado */

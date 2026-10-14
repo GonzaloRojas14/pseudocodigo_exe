@@ -127,6 +127,12 @@ const KEYWORDS: Record<string, KeywordSpec> = {
   crear: { type: "CREAR" },
   existe: { type: "EXISTE" },
 
+  // listas: punteros y memoria dinámica
+  nil: { type: "NIL" },
+  nuevo: { type: "NUEVO" },
+  disponer: { type: "DISPONER" },
+  puntero: { type: "PUNTERO" },
+
   y: { type: "Y" },
   o: { type: "O" },
   no: { type: "NO" },
@@ -205,7 +211,10 @@ const LOOSE_NAME_PART = /[\p{L}\p{N}_.]/u;
  * Fuera de eso son identificadores comunes: "arr" es el nombre más habitual para
  * un arreglo y "avz" aparece como variable en apuntes.
  */
-const PRIMITIVAS_AMBIGUAS = new Set(["arr", "avz"]);
+const PRIMITIVAS_AMBIGUAS = new Set(["arr", "avz", "nuevo", "disponer"]);
+
+/** "FIN SI", "FIN REGISTRO": las filminas de listas escriben los cierres con espacio */
+const CIERRES_CON_ESPACIO = /^[ \t]+(si|mientras|para|segun|según|registro|accion|acción|funcion|función|procedimiento)(?![\p{L}\p{N}_])/iu;
 
 export interface LexResult {
   tokens: Token[];
@@ -271,6 +280,16 @@ export function tokenize(source: string): LexResult {
         message: "La cátedra usa // para comentarios de línea (y /* */ para bloque); # no es notación oficial.",
         severity: "warning",
       });
+      continue;
+    }
+    // { CASO 1 }: comentario entre llaves, como en las filminas de listas
+    if (ch === "{") {
+      while (i < source.length && at() !== "}") advance();
+      if (i >= source.length) {
+        notes.push({ pos: posAt(start, sl, sc), message: "Comentario entre llaves sin cerrar (falta }).", severity: "error" });
+      } else {
+        advance();
+      }
       continue;
     }
     if (ch === "/" && at(1) === "*") {
@@ -367,6 +386,16 @@ export function tokenize(source: string): LexResult {
       if (kw && PRIMITIVAS_AMBIGUAS.has(lower)) {
         const resto = source.slice(i);
         if (!/^\s*\(/.test(resto)) kw = undefined;
+      }
+      // "puntero" es palabra clave solo en "Puntero a NODO"; si no, es un nombre de variable
+      if (lower === "puntero" && !/^\s+a\s/i.test(source.slice(i))) kw = undefined;
+
+      if (lower === "fin") {
+        const cierre = CIERRES_CON_ESPACIO.exec(source.slice(i));
+        if (cierre) {
+          advance(cierre[0].length);
+          kw = KEYWORDS["fin_" + cierre[1].toLowerCase()];
+        }
       }
 
       if (kw) {
@@ -467,6 +496,33 @@ export function tokenize(source: string): LexResult {
       notes.push({ pos: posAt(start, sl, sc), message: raro.aviso, severity: "warning" });
       push(raro.texto, raro.texto, start, sl, sc);
       continue;
+    }
+
+    // p^.dato: el puntero desreferenciado, escrito después del nombre (= *p.dato).
+    // Es desreferencia si le sigue ".campo" o si cierra el operando (p^ = q^).
+    if (ch === "^" && tokens.length > 0) {
+      const previo = tokens[tokens.length - 1].type;
+      const sigue = source.slice(i + 1);
+      const despuesDeOperando = previo === "IDENT" || previo === ")" || previo === "]";
+      const esDeref =
+        despuesDeOperando &&
+        (/^\.\s*[\p{L}_]/u.test(sigue) || /^\s*($|[),;\]=<>\n:]|o\b|y\b|entonces\b|hacer\b)/i.test(sigue));
+      if (esDeref) {
+        advance();
+        push("DEREF", ch, start, sl, sc);
+        continue;
+      }
+    }
+
+    // *p.dato al principio de una línea (o después de ";") es el nodo apuntado, no una
+    // multiplicación: sin esto, "x := valor" seguido de "*p.prox := nil" se leería valor * p.prox
+    if (ch === "*" && /[\p{L}_(]/u.test(at(1)) && tokens.length > 0) {
+      const previo = tokens[tokens.length - 1];
+      if (previo.type === ";" || previo.pos.line < line) {
+        advance();
+        push("DEREF_PREFIJO", "*", start, sl, sc);
+        continue;
+      }
     }
 
     if ("+-*/=<>(),;:.[]^".includes(ch)) {

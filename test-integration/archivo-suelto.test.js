@@ -57,7 +57,7 @@ describe("Un archivo suelto, sin carpeta abierta", () => {
   let api;
 
   before(async () => {
-    const extension = vscode.extensions.getExtension("gonzalo.aed-pseudocodigo");
+    const extension = vscode.extensions.getExtension("RojasGonzalo007.aed-pseudocodigo");
     assert.ok(extension, "la extensión no está instalada");
     api = await extension.activate();
   });
@@ -147,7 +147,7 @@ describe("Archivos y secuencias en VS Code de verdad", () => {
   let api;
 
   before(async () => {
-    const extension = vscode.extensions.getExtension("gonzalo.aed-pseudocodigo");
+    const extension = vscode.extensions.getExtension("RojasGonzalo007.aed-pseudocodigo");
     api = await extension.activate();
   });
 

@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { columnasDe, type SistemaDeArchivos } from "./archivos";
-import type { Declaration, Program, RecordDecl } from "./ast";
+import type { Declaration, Program, RecordDecl, TypeNode } from "./ast";
 import { check } from "./checker";
 import type { Diagnostic } from "./diagnostics";
 import { CancelledError, RuntimeError, run, type Host } from "./interpreter";
@@ -183,7 +183,12 @@ async function generarDatos(): Promise<void> {
   // Los parámetros de la ACCION son datos externos y también necesitan su archivo:
   // un arreglo de registros va en .tsv con encabezado, el resto en .txt.
   for (const param of program.params) {
-    const elemento = param.type.kind === "array" ? param.type.element : param.type;
+    const elemento: TypeNode =
+      param.type.kind === "array"
+        ? param.type.element
+        : param.type.kind === "puntero"
+          ? { kind: "named", name: param.type.target, pos: param.type.pos }
+          : param.type;
     const esRegistro = elemento.kind === "named" && tipos.has(elemento.name.toLowerCase());
     const extension = esRegistro ? ".tsv" : ".txt";
     const destino = path.join(carpeta, param.name + extension);

@@ -1,13 +1,16 @@
 import {
   ArrayVal,
   CancelledError,
+  NIL,
+  Nil,
+  Nodo,
   RecordVal,
   RuntimeError,
   cloneValue,
   formatValue,
   type Value,
 } from "./valores";
-export { ArrayVal, CancelledError, RecordVal, RuntimeError, formatValue, type Value } from "./valores";
+export { ArrayVal, CancelledError, NIL, Nodo, RecordVal, RuntimeError, formatValue, type Value } from "./valores";
 import { ArchivoAbierto, SecuenciaAbierta, columnasDe, type SistemaDeArchivos } from "./archivos";
 import type {
   Declaration,
@@ -85,6 +88,8 @@ class Interpreter {
   private steps = 0;
   /** resultado del último LEER sobre un archivo indexado, para SI EXISTE */
   private existe: boolean | undefined;
+  /** próxima dirección que entrega NUEVO (simulada, solo para mostrarla) */
+  private proximaDireccion = 0x1000;
 
   constructor(
     private program: Program,
@@ -123,6 +128,11 @@ class Interpreter {
         );
       }
 
+      if (param.type.kind === "puntero") {
+        celda.value = this.listaDesde(param, fs);
+        continue;
+      }
+
       const esArreglo = param.type.kind === "array";
       const elemento = param.type.kind === "array" ? param.type.element : param.type;
       const esRegistro =
@@ -146,6 +156,58 @@ class Interpreter {
         ? this.arregloDesde(contenido, param, esRegistro)
         : this.escalarDesde(contenido, param);
     }
+  }
+
+  /**
+   * "ACCION ELIM ES (VALOR: entero, PRIM: Puntero a NODO)": la lista ya existe y se
+   * la dan hecha. Se carga de <nombre>.tsv, un nodo por fila en el orden de la lista,
+   * y los punteros se enlazan solos: los campos "ant..." al anterior, los demás al
+   * siguiente. Un ULT sin archivo propio apunta al último nodo de la lista ya cargada.
+   */
+  private ultimaLista: { tipo: string; nodos: Nodo[] } | undefined;
+
+  private listaDesde(param: Param, fs: SistemaDeArchivos): Value {
+    const tipo = param.type as Extract<TypeNode, { kind: "puntero" }>;
+    const registro = this.types.get(tipo.target.toLowerCase());
+    if (!registro) throw new RuntimeError(`El tipo "${tipo.target}" no está declarado.`, param.pos);
+    const contenido = fs.leer(param.name, ".tsv");
+
+    if (contenido === undefined) {
+      const lista = this.ultimaLista;
+      if (/^ult/i.test(param.name) && lista && lista.tipo.toLowerCase() === registro.name.toLowerCase()) {
+        return lista.nodos[lista.nodos.length - 1] ?? NIL;
+      }
+      throw new RuntimeError(
+        `No encontré los nodos de la lista "${param.name}", que la ACCION recibe como parámetro. ` +
+          `Tendría que estar en ${fs.ruta(param.name, ".tsv")}: una fila por nodo, en el orden de la lista, ` +
+          "con los nombres de los campos en la primera (sin los punteros, que se enlazan solos). " +
+          'Usá el comando "AED: Generar plantilla de datos".',
+        param.pos
+      );
+    }
+
+    const elemento: TypeNode = { kind: "named", name: registro.name, pos: param.pos };
+    const archivo = new ArchivoAbierto(param.name, registro, columnasDe(elemento, this.types, [], param.pos), () =>
+      this.defaultValue(elemento, param.name) as RecordVal
+    );
+    archivo.abrir("E", { leer: () => contenido, escribir: () => {}, ruta: (n, e) => `${n}${e}` }, param.pos);
+
+    const nodos = archivo.filas.map((fila) => {
+      const nodo = new Nodo(this.proximaDireccion, registro.name, fila);
+      this.proximaDireccion += 0x10;
+      return nodo;
+    });
+    const enlaces = registro.fields.filter(
+      (f) => f.type.kind === "puntero" && f.type.target.toLowerCase() === registro.name.toLowerCase()
+    );
+    nodos.forEach((nodo, i) => {
+      for (const campo of enlaces) {
+        const vecino = /^ant/i.test(campo.name) ? nodos[i - 1] : nodos[i + 1];
+        (nodo.valor as RecordVal).fields.set(campo.name.toLowerCase(), vecino ?? NIL);
+      }
+    });
+    this.ultimaLista = { tipo: registro.name, nodos };
+    return nodos[0] ?? NIL;
   }
 
   private arregloDesde(contenido: string, param: Param, esRegistro: boolean): Value {
@@ -298,6 +360,8 @@ class Interpreter {
         archivo.ordenadoPor = [...type.orderedBy];
         return archivo;
       }
+      case "puntero":
+        return NIL;
       case "secuencia": {
         const esCaracter =
           type.element.kind === "text" ||
@@ -319,7 +383,8 @@ class Interpreter {
     if (++this.steps > this.maxSteps) {
       throw new RuntimeError(
         `El programa superó ${this.maxSteps.toLocaleString("es-AR")} instrucciones: casi seguro hay un ciclo infinito ` +
-          "(revisá el AVZ que supera el delimitador, la guarda NFDS/NFDA, o el LEER al final del ciclo).",
+          "(revisá el AVZ que supera el delimitador, la guarda NFDS/NFDA, el LEER al final del ciclo, " +
+          "o en una lista el p := *p.prox que avanza al siguiente nodo).",
         pos
       );
     }
@@ -406,7 +471,54 @@ class Interpreter {
       case "file":
         await this.execFile(stmt, env);
         return;
+      case "puntero":
+        await this.execPuntero(stmt, env);
+        return;
     }
+  }
+
+  // ── punteros ─────────────────────────────────────────────────────────────
+
+  private async execPuntero(stmt: Extract<Stmt, { kind: "puntero" }>, env: Env): Promise<void> {
+    const slot = await this.resolveSlot(stmt.target, env);
+    const nombre = describe(stmt.target);
+    if (stmt.op === "NUEVO") {
+      if (slot.type?.kind !== "puntero") {
+        throw new RuntimeError(
+          `NUEVO(${nombre}): "${nombre}" tiene que estar declarada como Puntero a NODO.`,
+          stmt.pos
+        );
+      }
+      const valor = this.defaultValue({ kind: "named", name: slot.type.target, pos: slot.type.pos });
+      const tipo = valor instanceof RecordVal ? valor.typeName : slot.type.target;
+      slot.set(new Nodo(this.proximaDireccion, tipo, valor));
+      this.proximaDireccion += 0x10;
+      return;
+    }
+    const nodo = this.nodoApuntado(slot.get(), nombre, stmt.pos, "DISPONER");
+    nodo.liberado = true;
+  }
+
+  /** el nodo al que apunta un puntero, con los errores típicos de listas explicados */
+  private nodoApuntado(valor: Value, nombre: string, pos: Pos, uso = "acceder al nodo"): Nodo {
+    if (valor instanceof Nil) {
+      throw new RuntimeError(
+        `"${nombre}" vale NIL: no apunta a ningún nodo, así que no se puede ${uso === "DISPONER" ? "hacer DISPONER" : "acceder a *" + nombre}. ` +
+          `Antes de usar el nodo hay que preguntar ${nombre} <> NIL (o pedirlo con NUEVO(${nombre})).`,
+        pos
+      );
+    }
+    if (!(valor instanceof Nodo)) {
+      throw new RuntimeError(`"${nombre}" no es un puntero: no apunta a ningún nodo.`, pos);
+    }
+    if (valor.liberado) {
+      throw new RuntimeError(
+        `"${nombre}" apunta a un nodo que ya se liberó con DISPONER: ese nodo ya no existe. ` +
+          "Después de DISPONER(p) no se usa más *p.",
+        pos
+      );
+    }
+    return valor;
   }
 
   private get fs(): SistemaDeArchivos {
@@ -731,8 +843,28 @@ class Interpreter {
           type: cell.type,
         };
       }
+      case "deref": {
+        const target = await this.resolveSlot(expr.target, env).catch(async (err) => {
+          // *(expresión): el puntero puede venir de una cuenta, no de una variable
+          if (!(err instanceof RuntimeError) || expr.target.kind === "ident") throw err;
+          const valor = await this.eval(expr.target, env);
+          return { get: () => valor, set: () => undefined, type: undefined } as Slot;
+        });
+        const nodo = this.nodoApuntado(target.get(), describe(expr.target), expr.pos);
+        return {
+          get: () => nodo.valor,
+          set: (value) => {
+            nodo.valor = value;
+          },
+          type: { kind: "named", name: nodo.tipo, pos: expr.pos },
+        };
+      }
       case "field": {
-        const target = await this.resolveSlot(expr.target, env);
+        let target = await this.resolveSlot(expr.target, env);
+        // p.dato con p puntero: se entiende como *p.dato (el checker avisa la notación)
+        if (target.get() instanceof Nodo || target.get() instanceof Nil) {
+          target = await this.resolveSlot({ kind: "deref", pos: expr.pos, target: expr.target }, env);
+        }
         const record = target.get();
         if (!(record instanceof RecordVal)) {
           throw new RuntimeError(`"${describe(expr.target)}" no es un registro: no tiene campos.`, expr.pos);
@@ -810,8 +942,11 @@ class Interpreter {
         }
         return cell.value;
       }
+      case "nil":
+        return NIL;
       case "field":
       case "index":
+      case "deref":
         return (await this.resolveSlot(expr, env)).get();
       case "callExpr": {
         const key = expr.callee.toLowerCase();
@@ -965,6 +1100,24 @@ class Interpreter {
         if (!(value instanceof ArrayVal)) throw this.typeError(value, "arreglo", pos);
         return value.clone();
       }
+      case "puntero": {
+        if (value instanceof Nil) return value;
+        if (!(value instanceof Nodo)) {
+          throw new RuntimeError(
+            `${destino ? `"${destino}" es un Puntero a ${type.target}` : `Se esperaba un Puntero a ${type.target}`} ` +
+              `y se le intentó guardar "${formatValue(value)}". A un puntero se le asigna otro puntero, NIL, o se le pide un nodo con NUEVO; ` +
+              `el dato va en el nodo: *${destino ?? "p"}.dato := ...`,
+            pos
+          );
+        }
+        if (value.tipo.toLowerCase() !== type.target.toLowerCase()) {
+          throw new RuntimeError(
+            `${destino ? `"${destino}"` : "El puntero"} apunta a nodos ${type.target}, y se le asignó un puntero a un ${value.tipo}.`,
+            pos
+          );
+        }
+        return value;
+      }
       default:
         return value;
     }
@@ -1039,6 +1192,13 @@ function applyBinary(
  * por eso una FECHA se declara anio, mes, dia (sintaxis-completa §3).
  */
 function compare(left: Value, right: Value, pos: Pos, types: Map<string, RecordDecl>): number {
+  if (esPuntero(left) || esPuntero(right)) {
+    throw new RuntimeError(
+      "Los punteros solo se comparan con = y <> (¿apuntan al mismo nodo?, ¿es NIL?). " +
+        "Para ordenar se comparan los datos de los nodos: *p.dato < *q.dato.",
+      pos
+    );
+  }
   if (left instanceof RecordVal && right instanceof RecordVal) {
     const decl = types.get(left.typeName.toLowerCase());
     const keys = decl
@@ -1069,6 +1229,8 @@ function compare(left: Value, right: Value, pos: Pos, types: Map<string, RecordD
 }
 
 function looseEquals(left: Value, right: Value, types: Map<string, RecordDecl>): boolean {
+  // dos punteros son iguales si apuntan al mismo nodo (o los dos son NIL)
+  if (esPuntero(left) || esPuntero(right)) return left === right;
   if (left instanceof RecordVal && right instanceof RecordVal) {
     return compare(left, right, { line: 0, col: 0, offset: 0, length: 0 }, types) === 0;
   }
@@ -1076,6 +1238,10 @@ function looseEquals(left: Value, right: Value, types: Map<string, RecordDecl>):
   if (typeof left === "boolean" || typeof right === "boolean") return left === right;
   if (typeof left === "number" && typeof right === "number") return left === right;
   return formatValue(left) === formatValue(right);
+}
+
+function esPuntero(value: Value): boolean {
+  return value instanceof Nodo || value instanceof Nil;
 }
 
 function numeric(value: Value, pos: Pos): number {
@@ -1116,6 +1282,9 @@ function nombreDelTipo(type: TypeNode | undefined): string {
 function describe(expr: Expr): string {
   if (expr.kind === "ident") return expr.name;
   if (expr.kind === "field") return `${describe(expr.target)}.${expr.field}`;
+  if (expr.kind === "deref") {
+    return expr.target.kind === "ident" ? `*${expr.target.name}` : `*(${describe(expr.target)})`;
+  }
   if (expr.kind === "index") {
     const indices = expr.indices
       .map((idx) =>
