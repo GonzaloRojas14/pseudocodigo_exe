@@ -252,7 +252,7 @@ class Parser {
     // La ACCION puede recibir datos externos: la cátedra plantea ejercicios que
     // arrancan con "reciba como parámetro los 50 códigos de error". Los valores
     // se cargan desde la carpeta de datos, igual que los archivos.
-    const params = this.parseParams();
+    let params = this.parseParams();
 
     if (this.check("IDENT")) {
       this.warn(
@@ -264,6 +264,11 @@ class Parser {
 
     if (!this.accept("ES")) {
       this.warn(`Falta "ES" después del nombre: va "ACCION ${name} ES".`, namePos);
+    }
+    // las filminas de listas ponen los parámetros después del ES: ACCION ELIM ES (PRIM: Puntero a NODO);
+    if (params.length === 0 && this.check("(")) {
+      params = this.parseParams();
+      this.accept(";");
     }
     this.skipStrayColon("ACCION ... ES");
 
@@ -412,10 +417,15 @@ class Parser {
     if (!this.check(")")) {
       do {
         const byRef = !!this.accept("VAR");
-        const p = this.identName("el nombre del parámetro");
+        const nombres = [this.identName("el nombre del parámetro")];
+        // (PRIM, ULT: Puntero a NODO): varios nombres con el mismo tipo
+        while (this.check(",") && this.peek(1).type === "IDENT" && [",", ":"].includes(this.peek(2).type)) {
+          this.next();
+          nombres.push(this.identName("el nombre del parámetro"));
+        }
         this.expect(":", '":" y el tipo del parámetro');
         const type = this.parseType();
-        params.push({ pos: p.pos, name: p.name, byRef, type });
+        for (const p of nombres) params.push({ pos: p.pos, name: p.name, byRef, type });
       } while (this.accept(","));
     }
     this.expect(")", '")" para cerrar los parámetros');
@@ -502,6 +512,16 @@ class Parser {
         indexedBy.push(...this.parseKeyList());
       }
       return { kind: "archivo", pos: tok.pos, element, orderedBy, indexedBy };
+    }
+
+    // Puntero a NODO
+    if (tok.type === "PUNTERO") {
+      this.next();
+      const a = this.current;
+      if (a.type === "IDENT" && a.value.toLowerCase() === "a") this.next();
+      else this.error('Se escribe "Puntero a" y el registro del nodo: Puntero a NODO.');
+      const target = this.expect("IDENT", "el nombre del registro del nodo");
+      return { kind: "puntero", pos: tok.pos, target: target.value };
     }
 
     if (tok.type === "SECUENCIA") {
@@ -689,7 +709,20 @@ class Parser {
       case "ELIMINAR":
         return this.parseFileStmt();
       case "IDENT":
+      case "*":
+      case "DEREF_PREFIJO":
         return this.parseAssignOrCall();
+      case "NUEVO":
+      case "DISPONER": {
+        const op = this.next();
+        this.expect("(", `"(" con el puntero: ${op.type}(p)`);
+        const target = this.parsePostfix();
+        if (target.kind !== "ident" && target.kind !== "field" && target.kind !== "index" && target.kind !== "deref") {
+          this.error(`${op.type} va con una variable puntero: ${op.type}(p).`, target.pos);
+        }
+        this.expect(")", '")" para cerrar');
+        return { kind: "puntero", pos: op.pos, op: op.type as "NUEVO" | "DISPONER", target: target as LValue };
+      }
       default: {
         const cierres: Record<string, string> = {
           FIN_SI: "SI",
@@ -865,7 +898,7 @@ class Parser {
       if (opTok.type === "=") {
         this.warn("La asignación se escribe := ; el = es comparación (sintaxis-completa §12).", opTok.pos);
       }
-      if (target.kind !== "ident" && target.kind !== "field" && target.kind !== "index") {
+      if (target.kind !== "ident" && target.kind !== "field" && target.kind !== "index" && target.kind !== "deref") {
         this.error("A la izquierda de := va una variable, un campo o una componente de arreglo.", start.pos);
       }
       const value = this.parseExpression();
@@ -977,6 +1010,12 @@ class Parser {
   private parsePostfix(): Expr {
     let expr = this.parsePrimary();
     for (;;) {
+      // p^: el nodo apuntado, escrito después del nombre
+      if (this.check("DEREF")) {
+        const op = this.next();
+        expr = { kind: "deref", pos: op.pos, target: expr };
+        continue;
+      }
       if (this.check(".")) {
         const dot = this.next();
         const field = this.current;
@@ -1029,6 +1068,25 @@ class Parser {
       case "EXISTE":
         this.next();
         return { kind: "existe", pos: tok.pos };
+      case "NIL":
+        this.next();
+        return { kind: "nil", pos: tok.pos };
+      // *p: el nodo apuntado por p. El * toma solo el nombre (o un paréntesis), y los
+      // .campo que siguen son del nodo: *p.dato es el dato del nodo, *(*p.prox).dato el del siguiente
+      case "*":
+      case "DEREF_PREFIJO": {
+        this.next();
+        let target: Expr;
+        if (this.check("(")) {
+          this.next();
+          target = this.parseExpression();
+          this.expect(")", '")" para cerrar el paréntesis');
+        } else {
+          const name = this.expect("IDENT", 'el puntero después del "*": *p.dato');
+          target = { kind: "ident", pos: name.pos, name: name.value };
+        }
+        return { kind: "deref", pos: tok.pos, target };
+      }
       case "IDENT":
       case "TIPO":
         this.next();

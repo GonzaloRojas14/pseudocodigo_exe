@@ -1,0 +1,70 @@
+// Lista simplemente enlazada: carga ordenada, recorrido y baja de un nodo.
+// *p y p^ significan lo mismo: el nodo al que apunta p.
+ACCION listas ES
+    AMBIENTE
+        NODO = REGISTRO
+            dato: entero
+            prox: Puntero a NODO
+        FIN_REGISTRO
+
+        PRIM, P, Q, ANT: Puntero a NODO
+        valor: entero
+
+    PROCESO
+        // carga ordenada: termina con 0
+        PRIM := NIL
+        ESCRIBIR("Ingresá números (0 para terminar):")
+        LEER(valor)
+        MIENTRAS valor <> 0 HACER
+            NUEVO(Q)
+            *Q.dato := valor
+            P := PRIM
+            ANT := NIL
+            MIENTRAS (P <> NIL) Y (*P.dato < *Q.dato) HACER
+                ANT := P
+                P := *P.prox
+            FIN_MIENTRAS
+            SI ANT = NIL ENTONCES
+                *Q.prox := PRIM           { antes del primero, o lista vacía }
+                PRIM := Q
+            SINO
+                *Q.prox := P              { en el medio o después del último }
+                *ANT.prox := Q
+            FIN_SI
+            LEER(valor)
+        FIN_MIENTRAS
+
+        // recorrido
+        ESCRIBIR("Lista ordenada:")
+        P := PRIM
+        MIENTRAS P <> NIL HACER
+            ESCRIBIR("  ", *P.dato)
+            P := *P.prox
+        FIN_MIENTRAS
+
+        // baja: se busca el valor, se desengancha el nodo y se libera
+        ESCRIBIR("¿Qué número borro?")
+        LEER(valor)
+        P := PRIM
+        ANT := NIL
+        MIENTRAS (P <> NIL) Y (P^.dato <> valor) HACER
+            ANT := P
+            P := P^.prox
+        FIN_MIENTRAS
+        SI P = NIL ENTONCES
+            ESCRIBIR("No está en la lista.")
+        SINO
+            SI P = PRIM ENTONCES
+                PRIM := *P.prox
+            SINO
+                *ANT.prox := *P.prox
+            FIN_SI
+            DISPONER(P)
+            ESCRIBIR("Borrado. Queda:")
+            P := PRIM
+            MIENTRAS P <> NIL HACER
+                ESCRIBIR("  ", *P.dato)
+                P := *P.prox
+            FIN_MIENTRAS
+        FIN_SI
+FIN_ACCION

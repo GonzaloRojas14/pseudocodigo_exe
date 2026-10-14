@@ -176,6 +176,9 @@ class Checker {
       case "secuencia":
         this.checkTypeRef(type.element);
         break;
+      case "puntero":
+        this.checkTypeRef({ kind: "named", name: type.target, pos: type.pos });
+        break;
       case "subrange":
         if (type.low > type.high) {
           this.error(type.pos, `Los límites del subrango están al revés: ${type.low}..${type.high}.`);
@@ -286,7 +289,11 @@ class Checker {
         }
         this.checkExpr(target, scope);
         this.checkExpr(stmt.value, scope);
-        if (target.kind === "ident") {
+        if (target.kind === "ident" && contieneDeref(stmt.value)) {
+          // p := *p.prox avanza por la lista: no es acumular sobre sí misma
+          this.inicializados.add(target.name.toLowerCase());
+          conocidos.delete(target.name.toLowerCase());
+        } else if (target.kind === "ident") {
           const clave = target.name.toLowerCase();
           if (usaVariable(stmt.value, clave)) {
             if (!this.acumuladores.has(clave)) {
@@ -419,6 +426,19 @@ class Checker {
         });
         break;
       }
+      case "puntero": {
+        const tipo = this.checkExpr(stmt.target, scope);
+        if (tipo && tipo.kind !== "puntero") {
+          this.error(stmt.pos, `${stmt.op}(${nombreDe(stmt.target)}): "${nombreDe(stmt.target)}" tiene que ser un Puntero a NODO.`);
+        }
+        const root = rootName(stmt.target);
+        if (root && stmt.op === "NUEVO") {
+          this.assigned.add(root.toLowerCase());
+          this.inicializados.add(root.toLowerCase());
+          conocidos.delete(root.toLowerCase());
+        }
+        break;
+      }
       case "file": {
         for (const arg of stmt.args) this.checkExpr(arg, scope);
         for (const arg of stmt.args) {
@@ -441,7 +461,17 @@ class Checker {
       case "string":
       case "bool":
       case "existe":
+      case "nil":
         return undefined;
+      case "deref": {
+        const tipo = this.checkExpr(expr.target, scope);
+        if (!tipo) return undefined;
+        if (tipo.kind !== "puntero") {
+          this.error(expr.pos, `"${nombreDe(expr.target)}" no es un puntero: solo a un puntero se le pide el nodo con *${nombreDe(expr.target)}.`);
+          return undefined;
+        }
+        return { kind: "named", name: tipo.target, pos: expr.pos };
+      }
       case "ident": {
         if (FILE_PREDICATES.has(expr.name.toLowerCase())) return undefined;
         const symbol = scope.lookup(expr.name);
@@ -478,7 +508,15 @@ class Checker {
         return symbol.type;
       }
       case "field": {
-        const targetType = this.checkExpr(expr.target, scope);
+        let targetType = this.checkExpr(expr.target, scope);
+        if (targetType?.kind === "puntero") {
+          const p = nombreDe(expr.target);
+          this.warn(
+            expr.pos,
+            `"${p}" es un puntero: el campo es del nodo al que apunta, y se escribe *${expr.target.kind === "ident" ? p : `(${p})`}.${expr.field} (o ${p}^.${expr.field}).`
+          );
+          targetType = { kind: "named", name: targetType.target, pos: expr.pos };
+        }
         const record = this.resolveRecord(targetType);
         if (!record) return undefined;
         const field = record.fields.find((f) => f.name.toLowerCase() === expr.field.toLowerCase());
@@ -625,6 +663,7 @@ function usaVariable(expr: Expr, clave: string): boolean {
       return expr.name.toLowerCase() === clave;
     case "field":
     case "index":
+    case "deref":
       return usaVariable(expr.target, clave);
     case "unary":
       return usaVariable(expr.operand, clave);
@@ -646,7 +685,10 @@ function variablesDeLaCondicion(expr: Expr, salida: Set<string>): boolean {
     case "number":
     case "string":
     case "bool":
+    case "nil":
       return true;
+    case "deref":
+      return variablesDeLaCondicion(expr.target, salida);
     case "ident": {
       const nombre = expr.name.toLowerCase();
       if (FILE_PREDICATES.has(nombre)) return false;
@@ -676,8 +718,15 @@ function variablesQueCambian(stmts: Stmt[], salida: Set<string>): boolean {
   for (const stmt of stmts) {
     switch (stmt.kind) {
       case "assign": {
+        // escribir en un nodo (*q.dato := ...) puede cambiar lo que ve otro puntero al mismo nodo
+        if (contieneDeref(stmt.target)) return false;
         const root = rootName(stmt.target);
         if (root) salida.add(root.toLowerCase());
+        break;
+      }
+      case "puntero": {
+        const root = rootName(stmt.target);
+        if (stmt.op === "NUEVO" && root) salida.add(root.toLowerCase());
         break;
       }
       case "io": {
@@ -778,12 +827,36 @@ function evaluarCondicion(
   };
 }
 
+function contieneDeref(expr: Expr): boolean {
+  switch (expr.kind) {
+    case "deref":
+      return true;
+    case "field":
+    case "index":
+      return contieneDeref(expr.target);
+    case "unary":
+      return contieneDeref(expr.operand);
+    case "binary":
+      return contieneDeref(expr.left) || contieneDeref(expr.right);
+    default:
+      return false;
+  }
+}
+
+function nombreDe(expr: Expr): string {
+  if (expr.kind === "ident") return expr.name;
+  if (expr.kind === "field") return `${nombreDe(expr.target)}.${expr.field}`;
+  if (expr.kind === "deref") return expr.target.kind === "ident" ? `*${expr.target.name}` : `*(${nombreDe(expr.target)})`;
+  return "la expresión";
+}
+
 function rootName(expr: Expr): string | undefined {
   switch (expr.kind) {
     case "ident":
       return expr.name;
     case "field":
     case "index":
+    case "deref":
       return rootName(expr.target);
     default:
       return undefined;
