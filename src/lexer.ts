@@ -131,6 +131,8 @@ const KEYWORDS: Record<string, KeywordSpec> = {
 
   // listas: punteros y memoria dinámica
   nil: { type: "NIL" },
+  // la teoría de listas escribe NULO para el fin de lista
+  nulo: { type: "NIL" },
   nuevo: { type: "NUEVO" },
   disponer: { type: "DISPONER" },
   puntero: { type: "PUNTERO" },

@@ -390,3 +390,47 @@ test("un registro suelto por parámetro (N: NODO) se carga del .tsv: encabezado 
     /un solo registro NODO.*2 fila/
   );
 });
+
+test("la notación de SINTAXIS.md: NULO como fin de lista y BORRAR(p) para liberar el nodo", async () => {
+  const fuente = `
+    ACCION baja ES
+        AMBIENTE ${NODO}
+            PRIM, p, q, ant: Puntero a NODO
+            valor, valorBuscado: entero
+        PROCESO
+            PRIM := NULO
+            LEER(valor)
+            MIENTRAS valor <> 0 HACER
+                NUEVO(q)
+                *q.dato := valor
+                *q.prox := PRIM
+                PRIM := q
+                LEER(valor)
+            FIN_MIENTRAS
+            LEER(valorBuscado)
+            p := PRIM; ant := NULO
+            MIENTRAS (p <> NULO) Y (*p.dato <> valorBuscado) HACER
+                ant := p
+                p := *p.prox
+            FIN_MIENTRAS
+            SI p <> NULO ENTONCES
+                SI ant = NULO ENTONCES
+                    PRIM := *p.prox
+                SINO
+                    *ant.prox := *p.prox
+                FIN_SI
+                BORRAR(p)
+            FIN_SI
+            p := PRIM
+            MIENTRAS p <> NULO HACER
+                ESCRIBIR(*p.dato)
+                p := *p.prox
+            FIN_MIENTRAS
+    FIN_ACCION`;
+  assert.deepStrictEqual(await execute(fuente, ["1", "2", "3", "0", "2"]), ["3", "1"]);
+  // después de BORRAR(p) el nodo ya no se puede usar
+  await assert.rejects(
+    execute(conNodo("NUEVO(p)\n BORRAR(p)\n ESCRIBIR(*p.dato)")),
+    /ya se liberó/
+  );
+});

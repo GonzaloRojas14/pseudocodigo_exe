@@ -134,7 +134,7 @@ Valen lo mismo que en la cátedra: se prenden cuando el último `LEER` o `AVZ` *
 
 Un archivo `INDEXADO por clave` se accede por clave, no se recorre: se carga la clave en el registro, se hace `LEER`, se pregunta `SI EXISTE` y recién ahí se opera (`ESCRIBIR` da de alta, `RE-ESCRIBIR` modifica, `ELIMINAR` da de baja física).
 
-**Listas con punteros**: `Puntero a NODO`, `NIL`, `NUEVO(p)` y `DISPONER(p)`. Al nodo apuntado se accede con `*p.dato` o con `p^.dato` (significan lo mismo), y se anida con paréntesis: `*(*p.ant).prox := q`. Corren las listas simples, dobles y circulares, las cargas apilada, encolada y ordenada, y los cuatro casos de inserción y de eliminación tal como están en las filminas, incluidos los `{ comentarios }` entre llaves y los cierres con espacio (`FIN SI`, `FIN REGISTRO`).
+**Listas con punteros**: `Puntero a NODO`, `NIL` (o `NULO`), `NUEVO(p)` y `DISPONER(p)` (o `BORRAR(p)`, como en la teoría; con dos argumentos, `BORRAR(arch, reg)` sigue siendo la baja en un indexado). Al nodo apuntado se accede con `*p.dato` o con `p^.dato` (significan lo mismo), y se anida con paréntesis: `*(*p.ant).prox := q`. Corren las listas simples, dobles y circulares, las cargas apilada, encolada y ordenada, y los cuatro casos de inserción y de eliminación tal como están en las filminas, incluidos los `{ comentarios }` entre llaves y los cierres con espacio (`FIN SI`, `FIN REGISTRO`).
 
 Los errores típicos se explican en vez de colgarse: usar `*p` cuando `p` vale `NIL`, usar un nodo después de `DISPONER`, guardar un dato en el puntero en lugar de en el nodo, o escribir `p.dato` sin el `*`. `ESCRIBIR(p)` muestra la dirección del nodo (`0x1000`) o `NIL`.
 

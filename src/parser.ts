@@ -886,6 +886,12 @@ class Parser {
       } while (this.accept(","));
     }
     this.expect(")", '")" para cerrar los argumentos');
+    // BORRAR(p) con un solo argumento libera el nodo (= DISPONER): así lo escribe la
+    // teoría de listas. Con dos, BORRAR(arch, reg) sigue siendo la baja en el indexado.
+    const unico = args[0];
+    if (op === "ELIMINAR" && args.length === 1 && ["ident", "field", "index", "deref"].includes(unico.kind)) {
+      return { kind: "puntero", pos: start.pos, op: "DISPONER", target: unico as LValue };
+    }
     return { kind: "file", pos: start.pos, op, mode, args };
   }
 

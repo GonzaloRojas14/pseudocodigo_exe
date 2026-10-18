@@ -107,7 +107,7 @@
       "patterns": [
         {
           "name": "support.function.io.aed",
-          "match": "(?i)\\b(ESCRIBIR|ESC|GRABAR|LEER|ABRIR|CERRAR|RE-ESCRIBIR|REESCRIBIR|ELIMINAR|ARR|AVZ|CREAR|N?FDA|NOFDA|N?FDS|NOFDS|EXISTE|ABSO|NUEVO|DISPONER)\\b"
+          "match": "(?i)\\b(ESCRIBIR|ESC|GRABAR|LEER|ABRIR|CERRAR|RE-ESCRIBIR|REESCRIBIR|ELIMINAR|ARR|AVZ|CREAR|N?FDA|NOFDA|N?FDS|NOFDS|EXISTE|ABSO|NUEVO|DISPONER|BORRAR)\\b"
         }
       ]
     },
@@ -127,7 +127,7 @@
       "patterns": [
         {
           "name": "constant.language.aed",
-          "match": "(?i)\\b(VERDADERO|FALSO|NIL)\\b"
+          "match": "(?i)\\b(VERDADERO|FALSO|NIL|NULO)\\b"
         }
       ]
     },
