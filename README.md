@@ -87,6 +87,8 @@ nro_leg	apellido	fecha_nac.anio	fecha_nac.mes	fecha_nac.dia
 1043	Benitez	2003	11	2
 ```
 
+Si los datos vienen de un script o de una planilla, también sirve un **`.csv` separado por comas** con el mismo nombre (`arch.csv`): si no está el `.tsv`, se lee ese.
+
 **`SECUENCIA` → un `.txt`** con la cinta tal cual, con sus espacios y su marca de fin:
 
 ```
@@ -103,6 +105,8 @@ costo_hora.txt          mes.txt
 ```
 
 Un **parámetro puntero** (`ACCION ELIM ES (VALOR: entero, PRIM: Puntero a NODO)`) es una lista que te dan hecha. Va en `PRIM.tsv`, **un nodo por fila en el orden de la lista**, con los campos del nodo como columnas y **sin los punteros**, que se enlazan solos: los campos que empiezan con `ant` apuntan al nodo anterior y el resto al siguiente. Si además recibe un `ULT` (`PRIM, ULT: Puntero a NODO`), no lleva archivo: apunta al último nodo de esa misma lista. Un archivo con el encabezado solo es la lista vacía. "AED: Generar plantilla de datos" crea el `PRIM.tsv` con las columnas del nodo, y ninguno para `ULT`.
+
+**Si la consigna dice que la lista es circular**, el archivo se llama **`PRIM.circular.tsv`**. El contenido y el pseudocódigo son los mismos: lo único que cambia es que el último nodo apunta al primero (y en una doble, el `ant` del primero apunta al último). El tipo no lo dice, porque el `NODO` de una circular es igual al de una simple: lo dice la consigna, y vos se lo indicás con el nombre del archivo. Si te equivocás, el error te dice cuál va: un recorrido que espera volver al primero y cae en `NIL` sugiere `.circular.tsv`, y un `MIENTRAS p <> NIL` que no termina sobre una circular sugiere sacarle el `.circular`.
 
 Un **registro suelto** como parámetro (`N: NODO`) va en `N.tsv` con el encabezado y una sola fila.
 
@@ -132,11 +136,19 @@ Valen lo mismo que en la cátedra: se prenden cuando el último `LEER` o `AVZ` *
 
 **Anda todo el lenguaje hasta archivos**: `ACCION/Ambiente/Proceso`, todos los tipos (`entero`, `real`, `caracter`, `logico`, `AN(n)`, `N(n)`, `N(e,d)`, subrangos, enumerados), registros anidados, arreglos y matrices de cualquier dimensión, `SI`/`SEGUN`/`MIENTRAS`/`REPETIR`/`PARA`, funciones y procedimientos con paso por valor y por `var`, recursividad, `ESCRIBIR`/`LEER` por pantalla y teclado, **archivos secuenciales**, **secuencias** y **archivos indexados**. Con eso corren los ejercicios de corte de control, mezcla, actualización unitaria y por lotes, procesos estadísticos y los ABM indexados.
 
+Los parámetros van por valor o por referencia (`var`), separados con `,` o `;`, y pueden ser escalares, registros, arreglos, matrices o punteros. Un tipo se puede declarar con nombre y usar en los parámetros: `vector = ARREGLO[1..N] de entero` y después `PROCEDIMIENTO Cargar(var v : vector)`.
+
 Un archivo `INDEXADO por clave` se accede por clave, no se recorre: se carga la clave en el registro, se hace `LEER`, se pregunta `SI EXISTE` y recién ahí se opera (`ESCRIBIR` da de alta, `RE-ESCRIBIR` modifica, `ELIMINAR` da de baja física).
 
-**Listas con punteros**: `Puntero a NODO`, `NIL` (o `NULO`), `NUEVO(p)` y `DISPONER(p)` (o `BORRAR(p)`, como en la teoría; con dos argumentos, `BORRAR(arch, reg)` sigue siendo la baja en un indexado). Al nodo apuntado se accede con `*p.dato` o con `p^.dato` (significan lo mismo), y se anida con paréntesis: `*(*p.ant).prox := q`. Corren las listas simples, dobles y circulares, las cargas apilada, encolada y ordenada, y los cuatro casos de inserción y de eliminación tal como están en las filminas, incluidos los `{ comentarios }` entre llaves y los cierres con espacio (`FIN SI`, `FIN REGISTRO`).
+**Listas con punteros**: `Puntero a NODO`, `NIL` (o `NULO`), `NUEVO(p)` y `DISPONER(p)` (o `BORRAR(p)`, como en la teoría; con dos argumentos, `BORRAR(arch, reg)` sigue siendo la baja en un indexado). Al nodo apuntado se accede con `*p.dato`, `p^.dato` o `p*.dato` (significan lo mismo; la guía de trabajos prácticos escribe `P★.PROX`), y se anida con paréntesis: `*(*p.ant).prox := q`. Corren las listas simples, dobles y circulares, las cargas apilada, encolada y ordenada, y los cuatro casos de inserción y de eliminación tal como están en las filminas, incluidos los `{ comentarios }` entre llaves y los cierres con espacio (`FIN SI`, `FIN REGISTRO`).
 
 Los errores típicos se explican en vez de colgarse: usar `*p` cuando `p` vale `NIL`, usar un nodo después de `DISPONER`, guardar un dato en el puntero en lugar de en el nodo, o escribir `p.dato` sin el `*`. `ESCRIBIR(p)` muestra la dirección del nodo (`0x1000`) o `NIL`.
+
+**Todavía no se ejecuta:**
+
+- La coma decimal: `A := 1,3` va como `A := 1.3`.
+- `ARRAY [1..n] OF INTEGER`: en la notación de la cátedra es `ARREGLO[1..n] de entero`.
+- Subacciones escritas después del `FACCIÓN` del algoritmo principal, como en el corte de control de la guía: van dentro del Ambiente.
 
 ## Ejemplos incluidos
 

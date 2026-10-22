@@ -86,7 +86,7 @@ export interface NamedType extends Node {
 
 // ── Declaraciones ──────────────────────────────────────────────────────────
 
-export type Declaration = ConstDecl | RecordDecl | VarDecl | SubprogramDecl;
+export type Declaration = ConstDecl | RecordDecl | VarDecl | SubprogramDecl | TypeAliasDecl;
 
 export interface ConstDecl extends Node {
   kind: "const";
@@ -98,6 +98,13 @@ export interface RecordDecl extends Node {
   kind: "record";
   name: string;
   fields: FieldDecl[];
+}
+
+/** vector = ARREGLO[1..N] de entero: un nombre para un tipo que no es REGISTRO */
+export interface TypeAliasDecl extends Node {
+  kind: "alias";
+  name: string;
+  type: TypeNode;
 }
 
 export interface FieldDecl extends Node {

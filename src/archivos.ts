@@ -24,6 +24,9 @@ export function esUltimoDeLaLista(params: Param[], i: number): boolean {
     .some((p) => p.type.kind === "puntero" && p.type.target.toLowerCase() === tipo.target.toLowerCase());
 }
 
+const TSV = { extension: ".tsv", separador: "\t" };
+const CSV = { extension: ".csv", separador: "," };
+
 /** una columna del TSV: una hoja del registro, con su camino de campos */
 export interface Columna {
   ruta: string[];
@@ -155,6 +158,8 @@ export class ArchivoAbierto implements Archivo {
   /** el último LEER dejó el cursor acá: lo necesita RE-ESCRIBIR */
   ultimaLeida = -1;
   modificado = false;
+  /** en qué formato vinieron los datos: así se vuelven a escribir igual */
+  private formato = TSV;
 
   /** campos que forman la clave, si el archivo es INDEXADO */
   indexadoPor: string[] = [];
@@ -265,7 +270,17 @@ export class ArchivoAbierto implements Archivo {
       return;
     }
 
-    const contenido = fs.leer(this.nombre, ".tsv");
+    // los datos van en <var>.tsv; si no está, se acepta <var>.csv separado por comas,
+    // que es como exportan las lecturas los scripts y las planillas
+    let contenido = fs.leer(this.nombre, ".tsv");
+    this.formato = TSV;
+    if (contenido === undefined) {
+      const csv = fs.leer(this.nombre, ".csv");
+      if (csv !== undefined) {
+        contenido = csv;
+        this.formato = CSV;
+      }
+    }
     if (contenido === undefined && this.esIndexado && modo === "ES") {
       // un ABM puede arrancar con el maestro vacío: se crea al cerrar
       this.filas = [];
@@ -274,12 +289,13 @@ export class ArchivoAbierto implements Archivo {
     }
     if (contenido === undefined) {
       throw new RuntimeError(
-        `No encontré los datos de "${this.nombre}". Tendría que estar en ${fs.ruta(this.nombre, ".tsv")}. ` +
+        `No encontré los datos de "${this.nombre}". Tendría que estar en ${fs.ruta(this.nombre, ".tsv")} ` +
+          `(o en ${this.nombre}.csv, separado por comas). ` +
           'Usá el comando "AED: Generar plantilla de datos" y cargá las filas ahí.',
         pos
       );
     }
-    this.filas = this.parsearTsv(contenido, fs.ruta(this.nombre, ".tsv"), pos);
+    this.filas = this.parsearTsv(contenido, fs.ruta(this.nombre, this.formato.extension), pos);
     this.verificarOrden(pos);
   }
 
@@ -327,7 +343,8 @@ export class ArchivoAbierto implements Archivo {
     const lineas = contenido.split(/\r?\n/).filter((l) => l.trim() !== "");
     if (lineas.length === 0) return [];
 
-    const encabezado = lineas[0].split("\t").map((c) => c.trim());
+    const separador = this.formato.separador;
+    const encabezado = lineas[0].split(separador).map((c) => c.trim());
     const pareceEncabezado = encabezado.some((c) =>
       this.columnas.some((col) => col.titulo.toLowerCase() === c.toLowerCase())
     );
@@ -339,7 +356,7 @@ export class ArchivoAbierto implements Archivo {
     const filasDeDatos = pareceEncabezado ? lineas.slice(1) : lineas;
 
     return filasDeDatos.map((linea, i) => {
-      const celdas = linea.split("\t");
+      const celdas = linea.split(separador);
       const registro = this.plantillaVacia();
       columnasDelArchivo.forEach((columna, c) => {
         if (!columna) return;
@@ -389,15 +406,16 @@ export class ArchivoAbierto implements Archivo {
 
   cerrar(fs: SistemaDeArchivos): void {
     if (this.abierto && this.modo !== "E" && this.modificado) {
-      fs.escribir(this.nombre, ".tsv", this.serializar());
+      fs.escribir(this.nombre, this.formato.extension, this.serializar());
     }
     this.abierto = false;
   }
 
   serializar(): string {
-    const lineas = [this.columnas.map((c) => c.titulo).join("\t")];
+    const sep = this.formato.separador;
+    const lineas = [this.columnas.map((c) => c.titulo).join(sep)];
     for (const fila of this.filas) {
-      lineas.push(this.columnas.map((c) => formatValue(leerDeRuta(fila, c.ruta))).join("\t"));
+      lineas.push(this.columnas.map((c) => formatValue(leerDeRuta(fila, c.ruta))).join(sep));
     }
     return lineas.join("\n") + "\n";
   }

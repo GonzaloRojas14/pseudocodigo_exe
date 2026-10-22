@@ -82,6 +82,7 @@ export function parse(source: string): ParseResult {
   let program: Program | undefined;
   try {
     program = parser.parseProgram();
+    resolverAlias(program);
   } catch (err) {
     if (!(err instanceof ParseError)) throw err;
   }
@@ -328,7 +329,8 @@ class Parser {
   }
 
   private parseDeclaration(): Declaration {
-    if (this.check("FUNCION") || this.check("PROCEDIMIENTO")) return this.parseSubprogram();
+    // "Acción Calc (A, B: entero): entero es ... Faccion": la guía declara así las subacciones
+    if (this.check("FUNCION") || this.check("PROCEDIMIENTO") || this.check("ACCION")) return this.parseSubprogram();
 
     const first = this.identName("un nombre de variable, constante o tipo");
     const names = [first.name];
@@ -367,6 +369,11 @@ class Parser {
         this.expectCloser({ ...apertura, type: "REGISTRO" });
         return { kind: "record", pos: first.pos, name: first.name, fields };
       }
+      // vector = ARREGLO[1..N] de entero, punt = Puntero a NODO, dia = 1..31: un tipo con nombre
+      if (this.empiezaUnTipo()) {
+        const type = this.parseType();
+        return { kind: "alias", pos: first.pos, name: first.name, type };
+      }
       const value = this.parseExpression();
       if (value.kind === "number") {
         this.constantesNumericas.set(first.name.toLowerCase(), value.value);
@@ -377,6 +384,16 @@ class Parser {
     return this.error(
       `Se esperaba ":" (declaración de variable) o "=" (constante o REGISTRO) después de "${first.name}".`
     );
+  }
+
+  /** después de "nombre =": ¿viene un tipo (y no el valor de una constante)? */
+  private empiezaUnTipo(): boolean {
+    const t = this.current;
+    if (["ARREGLO", "PUNTERO", "TIPO", "SECUENCIA", "ARCHIVO"].includes(t.type)) return true;
+    if (t.type === "NUMBER" && this.peek(1).type === "..") return true;
+    if (t.type === "IDENT" && /^(an|n)$/i.test(t.value) && ["(", "["].includes(this.peek(1).type)) return true;
+    // enumerado: ('A','B')
+    return t.type === "(" && this.peek(1).type === "STRING" && this.peek(2).type === ",";
   }
 
   private parseFields(): FieldDecl[] {
@@ -426,26 +443,31 @@ class Parser {
         this.expect(":", '":" y el tipo del parámetro');
         const type = this.parseType();
         for (const p of nombres) params.push({ pos: p.pos, name: p.name, byRef, type });
-      } while (this.accept(","));
+        // el Anexo separa los parámetros con ";": X(matriz: ...; fila: entero; var v: ...)
+      } while (this.accept(",") || (this.accept(";") && !this.check(")")));
     }
     this.expect(")", '")" para cerrar los parámetros');
     return params;
   }
 
   private parseSubprogram(): SubprogramDecl {
-    const start = this.next(); // FUNCION | PROCEDIMIENTO
-    const isFunction = start.type === "FUNCION";
+    const start = this.next(); // FUNCION | PROCEDIMIENTO | ACCION
+    const esAccion = start.type === "ACCION";
+    let isFunction = start.type === "FUNCION";
     const { name } = this.identName(`el nombre ${isFunction ? "de la función" : "del procedimiento"}`);
 
     const params = this.parseParams();
 
     let returnType: TypeNode | undefined;
     if (this.accept(":")) returnType = this.parseType();
+    // una Acción con tipo de retorno es una función; sin él, un procedimiento
+    if (esAccion) isFunction = returnType !== undefined;
     if (isFunction && !returnType) {
       this.warn("Una FUNCION declara el tipo que devuelve: FUNCION nombre(...) : entero ES", start.pos);
     }
 
-    if (!this.accept("ES")) {
+    // el Anexo de sintaxis cierra el encabezado con ";" en vez de ES: Procedimiento X(...);
+    if (!this.accept("ES") && !this.accept(";")) {
       this.warn(`Falta "ES" después del nombre: va "${start.raw} ${name} ES".`, start.pos);
     }
 
@@ -455,8 +477,11 @@ class Parser {
     const body = this.parseStatements();
 
     if (this.check("FIN_PROCESO")) this.next();
-    const expectedCloser = isFunction ? "FIN_FUNCION" : "FIN_PROCEDIMIENTO";
-    if (this.check("FIN_FUNCION") || this.check("FIN_PROCEDIMIENTO")) {
+    const expectedCloser = esAccion ? "FIN_ACCION" : isFunction ? "FIN_FUNCION" : "FIN_PROCEDIMIENTO";
+    if (esAccion && this.check("FIN_ACCION")) {
+      this.next();
+      this.accept(".");
+    } else if (this.check("FIN_FUNCION") || this.check("FIN_PROCEDIMIENTO")) {
       // "Fin;" / "Fin_Proc;" de las plantillas viejas cierran cualquiera de las dos
       const closer = this.next();
       const isLegacyCloser = /^fin(_?proc)?\.?$/i.test(closer.raw.trim());
@@ -773,7 +798,8 @@ class Parser {
   private parseSegun(): Stmt {
     const start = this.abrirBloque(this.next());
     const subject = this.parseExpression();
-    this.expect("HACER", '"HACER" después de la expresión del SEGUN');
+    // la guía escribe "Según OP" sin HACER
+    this.accept("HACER");
     this.skipStrayColon("SEGUN ... HACER");
     const branches: SegunBranch[] = [];
     while (!this.check("FIN_SEGUN") && !this.check("EOF")) {
@@ -953,6 +979,26 @@ class Parser {
       const op = this.next();
       // "v EN ('a','e','i')": el conjunto escrito en el lugar. Se desazucara a
       // (v = 'a') O (v = 'e') O (v = 'i'), que es exactamente lo que significa.
+      // "OP En [1 .. 5]": el conjunto entre corchetes, con valores sueltos o rangos
+      if (op.type === "EN" && this.check("[")) {
+        const abre = this.next();
+        const partes: Expr[] = [];
+        do {
+          const desde = this.parseAdditive();
+          if (this.accept("..")) {
+            const hasta = this.parseAdditive();
+            partes.push({
+              kind: "binary", pos: abre.pos, op: "Y",
+              left: { kind: "binary", pos: abre.pos, op: ">=", left, right: desde },
+              right: { kind: "binary", pos: abre.pos, op: "<=", left, right: hasta },
+            });
+          } else {
+            partes.push({ kind: "binary", pos: abre.pos, op: "=", left, right: desde });
+          }
+        } while (this.accept(","));
+        this.expect("]", '"]" para cerrar el conjunto');
+        return partes.reduce((acc, p): Expr => ({ kind: "binary", pos: abre.pos, op: "O", left: acc, right: p }));
+      }
       if (op.type === "EN" && this.check("(")) {
         const abre = this.next();
         const valores: Expr[] = [this.parseExpression()];
@@ -1116,4 +1162,45 @@ class Parser {
         );
     }
   }
+}
+
+/**
+ * Reemplaza cada uso de un tipo con nombre (vector = ARREGLO[...]) por el tipo
+ * real, así el checker y el intérprete ven "v : vector" igual que "v : ARREGLO[...]".
+ */
+function resolverAlias(program: Program): void {
+  const alias = new Map<string, TypeNode>();
+  const juntar = (decls: Declaration[]): void => {
+    for (const d of decls) {
+      if (d.kind === "alias") alias.set(d.name.toLowerCase(), d.type);
+      if (d.kind === "subprogram") juntar(d.locals);
+    }
+  };
+  juntar(program.declarations);
+  if (alias.size === 0) return;
+
+  const resolver = (t: TypeNode, vistos: Set<string> = new Set()): TypeNode => {
+    if (t.kind === "named") {
+      const clave = t.name.toLowerCase();
+      const destino = alias.get(clave);
+      if (!destino || vistos.has(clave)) return t;
+      return resolver(destino, new Set([...vistos, clave]));
+    }
+    if (t.kind === "array") return { ...t, element: resolver(t.element, vistos) };
+    if (t.kind === "archivo" || t.kind === "secuencia") return { ...t, element: resolver(t.element, vistos) };
+    return t;
+  };
+  const enDecls = (decls: Declaration[]): void => {
+    for (const d of decls) {
+      if (d.kind === "var" || d.kind === "alias") d.type = resolver(d.type);
+      if (d.kind === "record") for (const f of d.fields) f.type = resolver(f.type);
+      if (d.kind === "subprogram") {
+        for (const p of d.params) p.type = resolver(p.type);
+        if (d.returnType) d.returnType = resolver(d.returnType);
+        enDecls(d.locals);
+      }
+    }
+  };
+  for (const p of program.params) p.type = resolver(p.type);
+  enDecls(program.declarations);
 }

@@ -194,6 +194,12 @@ async function generarDatos(): Promise<void> {
     const esRegistro = elemento.kind === "named" && tipos.has(elemento.name.toLowerCase());
     const extension = esRegistro ? ".tsv" : ".txt";
     const destino = path.join(carpeta, param.name + extension);
+    // una lista circular ya tiene su archivo como PRIM.circular.tsv: no se crea el PRIM.tsv
+    const circular = path.join(carpeta, param.name + ".circular.tsv");
+    if (param.type.kind === "puntero" && fs.existsSync(circular)) {
+      existentes.push(param.name + ".circular.tsv");
+      continue;
+    }
     if (fs.existsSync(destino)) {
       existentes.push(param.name + extension);
       continue;

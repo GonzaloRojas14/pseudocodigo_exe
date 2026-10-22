@@ -6,6 +6,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { errors, execute, warnings, type Archivos } from "./helpers";
 import { parse } from "../src/parser";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { columnasDe } from "../src/archivos";
 import type { RecordDecl } from "../src/ast";
 
@@ -211,7 +213,7 @@ test("acceder a *p con p = NIL explica que hay que preguntar p <> NIL", async ()
 test("usar un nodo después de DISPONER es un error", async () => {
   await assert.rejects(
     execute(conNodo("NUEVO(p)\n q := p\n DISPONER(p)\n ESCRIBIR(*q.dato)")),
-    /ya se liberó con DISPONER/
+    /ya se liberó \(con DISPONER o BORRAR\)/
   );
 });
 
@@ -433,4 +435,132 @@ test("la notación de SINTAXIS.md: NULO como fin de lista y BORRAR(p) para liber
     execute(conNodo("NUEVO(p)\n BORRAR(p)\n ESCRIBIR(*p.dato)")),
     /ya se liberó/
   );
+});
+
+// ── listas circulares que recibe la ACCION ─────────────────────────────────
+
+const ENCRIPTAR = `
+ACCION Ejercicio49 ES(PRIM: Puntero a ENCRIPTAR);
+AMBIENTE
+    ENCRIPTAR = REGISTRO
+        Multiplicador: N(5);
+        Prox: Puntero a ENCRIPTAR;
+    FIN_REGISTRO;
+    c: caracter;
+    i, prod, suma: entero;
+    P: Puntero a ENCRIPTAR;
+PROCESO
+    P := PRIM;
+    LEER(c);
+    MIENTRAS c <> '*' HACER
+        prod := ASCII(c) * *P.Multiplicador;
+        suma := 0;
+        MIENTRAS prod > 0 HACER
+            suma := suma + prod MOD 10;
+            prod := prod DIV 10;
+        FIN_MIENTRAS;
+        ESCRIBIR(suma);
+        P := *P.Prox;
+        LEER(c);
+    FIN_MIENTRAS;
+FIN_ACCION`;
+const MULTIPLICADORES = "Multiplicador\n3\n7\n2\n9\n5\n4\n8\n6\n";
+const ALGORITMOS = [..."ALGORITMOS", "*"];
+
+test("guía 4.9: PRIM.circular.tsv arma la lista circular y el 9.º carácter vuelve al 1.º multiplicador", async () => {
+  const salida = await execute(ENCRIPTAR, ALGORITMOS, { "PRIM.circular.tsv": MULTIPLICADORES });
+  assert.deepStrictEqual(salida, ["15", "10", "7", "9", "5", "13", "15", "12", "12", "14"]);
+});
+
+test("si la lista es circular pero el archivo es PRIM.tsv, el error sugiere PRIM.circular.tsv", async () => {
+  await assert.rejects(
+    execute(ENCRIPTAR, ALGORITMOS, { "PRIM.tsv": MULTIPLICADORES }),
+    /vale NIL.*PRIM\.circular\.tsv/
+  );
+});
+
+test("PRIM.tsv y PRIM.circular.tsv a la vez es un error: hay que dejar uno", async () => {
+  await assert.rejects(
+    execute(ENCRIPTAR, ALGORITMOS, { "PRIM.tsv": MULTIPLICADORES, "PRIM.circular.tsv": MULTIPLICADORES }),
+    /hay dos archivos/
+  );
+});
+
+test("un recorrido hasta NIL sobre una lista circular avisa que el archivo es .circular", async () => {
+  await assert.rejects(
+    execute(
+      `ACCION R ES(PRIM: Puntero a NODO);
+       AMBIENTE ${NODO}
+           P: Puntero a NODO;
+       PROCESO
+           P := PRIM;
+           MIENTRAS P <> NIL HACER P := *P.prox; FIN_MIENTRAS;
+       FIN_ACCION`,
+      [],
+      { "PRIM.circular.tsv": "dato\n1\n2\n3\n" }
+    ),
+    /ciclo infinito.*PRIM\.circular\.tsv.*PRIM\.tsv/
+  );
+});
+
+test("doble circular: el último sigue en el primero y el anterior del primero es el último", async () => {
+  const salida = await execute(
+    `ACCION DC ES(PRIM, ULT: Puntero a NODO);
+     AMBIENTE
+         NODO = REGISTRO
+             dato: entero;
+             prox: Puntero a NODO;
+             ant: Puntero a NODO;
+         FIN_REGISTRO;
+         P: Puntero a NODO;
+     PROCESO
+         ESCRIBIR(*(*ULT.prox).dato, " ", *(*PRIM.ant).dato);
+         P := ULT;
+         REPETIR ESCRIBIR(*P.dato); P := *P.ant; HASTA QUE P = ULT
+     FIN_ACCION`,
+    [],
+    { "PRIM.circular.tsv": "dato\n1\n2\n3\n" }
+  );
+  assert.deepStrictEqual(salida, ["1 3", "3", "2", "1"]);
+});
+
+test("ASCII(c) da el código del carácter, como en la guía", async () => {
+  const salida = await execute(`
+    ACCION t ES
+        AMBIENTE
+            c: caracter
+        PROCESO
+            c := 'A'
+            ESCRIBIR(ASCII(c), " ", ASCII('a') - ASCII('A'))
+    FIN_ACCION`);
+  assert.deepStrictEqual(salida, ["65 32"]);
+});
+
+test("ASCII con una palabra o con un número explica el error en vez de adivinar", async () => {
+  const con = (arg: string) => `
+    ACCION t ES
+        AMBIENTE
+            x: entero
+        PROCESO
+            x := ASCII(${arg})
+    FIN_ACCION`;
+  await assert.rejects(execute(con('"AB"')), /un solo carácter y se le pasó "AB"/);
+  await assert.rejects(execute(con("5")), /el número 5.*ASCII\('5'\)/);
+});
+
+test("Teoría/SINTAXIS.md: todas las cargas y operaciones de listas, pilas y colas, textuales", async () => {
+  const fuente = readFileSync(join(__dirname, "fixtures", "teoria_listas.frre"), "utf8");
+  const entrada = ["1", "2", "3", "1", "2", "3", "30", "10", "50", "20", "40", "10", "50", "99"];
+  assert.deepStrictEqual(await execute(fuente, entrada), [
+    "1. al inicio:", "3", "2", "1",
+    "2. al final:", "1", "2", "3",
+    "3. en orden:", "10", "20", "30", "40", "50",
+    "Elemento no encontrado",
+    "4. después de eliminar:", "20", "30", "40",
+    "5. pila: 3 2 1",
+    "Error: pila vacía",
+    "6. cola: 1 2 3",
+    "   ULT quedó en NULO: verdadero",
+    "Error: cola vacía",
+  ]);
 });

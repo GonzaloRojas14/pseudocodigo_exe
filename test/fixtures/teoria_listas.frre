@@ -1,0 +1,165 @@
+// Las cargas y operaciones de listas de Teoría/SINTAXIS.md, con cada bloque copiado
+// textual del apunte. Solo se completaron los comodines (valor sin tipo, tipo_dato)
+// y se agregaron los ciclos que repiten cada inserción.
+ACCION teoria ES
+AMBIENTE
+    NODO = REGISTRO
+        dato : N(5)                  // área de datos
+        prox : PUNTERO a NODO        // enlace al siguiente
+    FIN_REGISTRO
+
+    PRIM : PUNTERO a NODO            // puntero externo: apunta al primer nodo
+    ULT, q, aux, p, ant : PUNTERO a NODO
+    valor, valorBuscado, x, i : N(5)
+
+PROCEDIMIENTO RECORRER ES
+    aux := PRIM
+    MIENTRAS aux <> NULO HACER
+        ESCRIBIR(*aux.dato)
+        aux := *aux.prox
+    FIN_MIENTRAS
+FIN_PROCEDIMIENTO
+
+PROCEDIMIENTO APILAR(valor : N(5))
+    NUEVO(q)
+    *q.dato := valor
+    *q.prox := PRIM        // el nuevo apunta al anterior tope
+    PRIM := q              // el nuevo tope es el nuevo nodo
+FIN_PROCEDIMIENTO
+
+FUNCION DESAPILAR() : N(5)
+    SI PRIM = NULO ENTONCES
+        ESCRIBIR('Error: pila vacía')
+    SINO
+        aux := PRIM
+        valor := *aux.dato
+        PRIM := *PRIM.prox // el tope pasa al siguiente
+        BORRAR(aux)
+        DESAPILAR := valor
+    FIN_SI
+FIN_FUNCION
+
+PROCEDIMIENTO ENCOLAR(valor : N(5))
+    NUEVO(q)
+    *q.dato := valor
+    *q.prox := NULO
+    SI PRIM = NULO ENTONCES        // cola vacía
+        PRIM := q
+        ULT  := q
+    SINO
+        *ULT.prox := q             // conectar al último actual
+        ULT := q                   // actualizar el puntero al último
+    FIN_SI
+FIN_PROCEDIMIENTO
+
+FUNCION DESENCOLAR() : N(5)
+    SI PRIM = NULO ENTONCES
+        ESCRIBIR('Error: cola vacía')
+    SINO
+        aux := PRIM
+        valor := *aux.dato
+        PRIM := *PRIM.prox
+        SI PRIM = NULO ENTONCES    // la cola quedó vacía
+            ULT := NULO
+        FIN_SI
+        BORRAR(aux)
+        DESENCOLAR := valor
+    FIN_SI
+FIN_FUNCION
+
+PROCESO
+    // 1. Insertar al inicio (carga apilada): 3 valores
+    PRIM := NULO
+    PARA i := 1 HASTA 3 HACER
+        NUEVO(q)
+        LEER(*q.dato)
+        *q.prox := PRIM        // el nuevo apunta al antiguo primero
+        PRIM := q              // PRIM apunta al nuevo
+    FIN_PARA
+    ESCRIBIR("1. al inicio:")
+    RECORRER
+
+    // 2. Insertar al final (carga encolada, sin ULT): 3 valores
+    PRIM := NULO
+    PARA i := 1 HASTA 3 HACER
+        NUEVO(q)
+        LEER(*q.dato)
+        *q.prox := NULO
+        SI PRIM = NULO ENTONCES              // lista vacía
+            PRIM := q
+        SINO
+            aux := PRIM
+            MIENTRAS *aux.prox <> NULO HACER
+                aux := *aux.prox
+            FIN_MIENTRAS
+            *aux.prox := q
+        FIN_SI
+    FIN_PARA
+    ESCRIBIR("2. al final:")
+    RECORRER
+
+    // 3. Insertar en orden ascendente: 5 valores
+    PRIM := NULO
+    PARA i := 1 HASTA 5 HACER
+        NUEVO(q)
+        LEER(valor)
+        *q.dato := valor
+
+        p := PRIM; ant := NULO
+        MIENTRAS (p <> NULO) Y (valor > *p.dato) HACER
+            ant := p
+            p := *p.prox
+        FIN_MIENTRAS
+
+        SI p = PRIM ENTONCES                 // insertar al inicio
+            *q.prox := PRIM
+            PRIM := q
+        SINO
+            *ant.prox := q
+            *q.prox := p
+        FIN_SI
+    FIN_PARA
+    ESCRIBIR("3. en orden:")
+    RECORRER
+
+    // 4. Eliminar por valor: 3 búsquedas
+    PARA i := 1 HASTA 3 HACER
+        LEER(valorBuscado)
+        p := PRIM; ant := NULO
+        MIENTRAS (p <> NULO) Y (*p.dato <> valorBuscado) HACER
+            ant := p
+            p := *p.prox
+        FIN_MIENTRAS
+
+        SI p <> NULO ENTONCES                // se encontró
+            SI ant = NULO ENTONCES
+                PRIM := *p.prox              // era el primero
+            SINO
+                *ant.prox := *p.prox         // saltear el nodo
+            FIN_SI
+            BORRAR(p)
+        SINO
+            ESCRIBIR('Elemento no encontrado')
+        FIN_SI
+    FIN_PARA
+    ESCRIBIR("4. después de eliminar:")
+    RECORRER
+
+    // 5. Pila (LIFO)
+    PRIM := NULO
+    APILAR(1)
+    APILAR(2)
+    APILAR(3)
+    ESCRIBIR("5. pila: ", DESAPILAR(), " ", DESAPILAR(), " ", DESAPILAR())
+    x := DESAPILAR()
+
+    // 6. Cola (FIFO)
+    PRIM := NULO
+    ULT := NULO
+    ENCOLAR(1)
+    ENCOLAR(2)
+    ENCOLAR(3)
+    ESCRIBIR("6. cola: ", DESENCOLAR(), " ", DESENCOLAR(), " ", DESENCOLAR())
+    ESCRIBIR("   ULT quedó en NULO: ", ULT = NULO)
+    x := DESENCOLAR()
+FIN_ACCION

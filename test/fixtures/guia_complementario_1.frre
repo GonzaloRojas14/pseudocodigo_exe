@@ -1,0 +1,28 @@
+{ Guía 2026, Ejercicios Complementarios TP 4, ejercicio 1 (p. 67): las órdenes 1) a 6)
+  sobre la lista 3 -> 5 -> 9 -> NIL, con P en el 3, Q en el 5 y R en el 9.
+  El esquema de la guía se arma primero con NUEVO; las órdenes son las del enunciado. }
+ACCION complementario1 ES
+AMBIENTE
+    NODO = registro
+        DATO: entero
+        PROX: puntero a NODO
+    Fin registro
+    P, Q, R: puntero a NODO
+PROCESO
+    NUEVO(R); R★.DATO := 9; R★.PROX := NIL
+    NUEVO(Q); Q★.DATO := 5; Q★.PROX := R
+    NUEVO(P); P★.DATO := 3; P★.PROX := Q
+
+    P:= P ★. PROX
+    ESCRIBIR("1) P:= P*.PROX           P en ", P★.DATO)
+    Q:= P
+    ESCRIBIR("2) Q:= P                 Q en ", Q★.DATO, ", P = Q: ", P = Q)
+    R:= P★.PROX
+    ESCRIBIR("3) R:= P*.PROX           R en ", R★.DATO)
+    P★.DATO:= Q★. DATO
+    ESCRIBIR("4) P*.DATO:= Q*.DATO     P*.DATO = ", P★.DATO)
+    P★.DATO:= (Q★.PROX) ★. DATO
+    ESCRIBIR("5) P*.DATO:= (Q*.PROX)*.DATO   P*.DATO = ", P★.DATO, ", Q*.DATO = ", Q★.DATO)
+    R★.PROX:= P
+    ESCRIBIR("6) R*.PROX:= P           R*.PROX = P: ", R★.PROX = P, ", lista: ", P★.DATO, " -> ", (P★.PROX)★.DATO, " -> ", ((P★.PROX)★.PROX)★.DATO)
+FIN_ACCION

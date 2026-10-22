@@ -229,6 +229,20 @@ describe("Archivos y secuencias en VS Code de verdad", () => {
     assert.match(salida(), /primero 10 ultimo 30 suelto 99/, salida());
   });
 
+  it("si la lista ya está como PRIM.circular.tsv, la plantilla no crea un PRIM.tsv al lado", async () => {
+    const uri = escribir("circular.frre", PROGRAMA_LISTA);
+    const datos = path.join(afuera, "circular.datos");
+    fs.mkdirSync(datos, { recursive: true });
+    fs.writeFileSync(path.join(datos, "PRIM.circular.tsv"), "legajo\tfecha.anio\tfecha.mes\n10\t2026\t3\n", "utf8");
+    const document = await vscode.workspace.openTextDocument(uri);
+    await vscode.window.showTextDocument(document);
+
+    await vscode.commands.executeCommand("aed.generarDatos");
+
+    await esperarA("que se cree N.tsv", () => fs.existsSync(path.join(datos, "N.tsv")));
+    assert.ok(!fs.existsSync(path.join(datos, "PRIM.tsv")), "no tendría que crear PRIM.tsv");
+  });
+
   it("y con los datos cargados, el algoritmo los lee y suma", async () => {
     const uri = escribir("ventas2.frre", PROGRAMA_ARCHIVO);
     fs.mkdirSync(path.join(afuera, "ventas2.datos"), { recursive: true });

@@ -11,7 +11,7 @@ import type {
 import { diag, type Diagnostic } from "./diagnostics";
 import { enumerar, masParecido } from "./texto";
 
-export const BUILTIN_FUNCTIONS = new Set(["abso", "trunc", "redond"]);
+export const BUILTIN_FUNCTIONS = new Set(["abso", "trunc", "redond", "ascii"]);
 /** predicados de archivo/secuencia: se chequean acá, se ejecutan en la fase 2 */
 const FILE_PREDICATES = new Set(["fda", "nfda", "fds", "nfds"]);
 
@@ -199,6 +199,13 @@ class Checker {
     this.collectDeclarations(sub.locals, scope);
     for (const local of sub.locals) {
       if (local.kind === "subprogram") this.checkSubprogram(local);
+    }
+    if (sub.isFunction && sub.params.length === 0) {
+      this.warn(
+        sub.pos,
+        `La función "${sub.name}" no recibe parámetros, y según la teoría la lista de parámetros de una FUNCION no puede estar vacía: ` +
+          "se le pasan los datos con los que calcula."
+      );
     }
     if (sub.isFunction) {
       scope.declare({ name: sub.name, type: sub.returnType, kind: "var", pos: sub.pos });
@@ -466,8 +473,12 @@ class Checker {
       case "deref": {
         const tipo = this.checkExpr(expr.target, scope);
         if (!tipo) return undefined;
+        // un tipo que no está declarado ya se marcó en la declaración: no se repite en cada uso
+        if (tipo.kind === "named" && !this.types.has(tipo.name.toLowerCase())) return undefined;
         if (tipo.kind !== "puntero") {
-          this.error(expr.pos, `"${nombreDe(expr.target)}" no es un puntero: solo a un puntero se le pide el nodo con *${nombreDe(expr.target)}.`);
+          const p = nombreDe(expr.target);
+          const conAsterisco = expr.target.kind === "ident" ? `*${p}` : `*(${p})`;
+          this.error(expr.pos, `"${p}" no es un puntero: solo a un puntero se le pide el nodo con ${conAsterisco}.`);
           return undefined;
         }
         return { kind: "named", name: tipo.target, pos: expr.pos };
@@ -475,6 +486,8 @@ class Checker {
       case "ident": {
         if (FILE_PREDICATES.has(expr.name.toLowerCase())) return undefined;
         const symbol = scope.lookup(expr.name);
+        // V y F son verdadero y falso en la teoría (ES_PRIMO := V), salvo que haya una variable con ese nombre
+        if (!symbol && /^[vf]$/i.test(expr.name)) return { kind: "scalar", name: "logico", pos: expr.pos };
         if (!symbol) {
           const parecida = masParecido(expr.name, scope.visibles());
           this.error(

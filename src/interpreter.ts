@@ -171,19 +171,33 @@ class Interpreter {
    * siguiente. Un ULT (esUltimoDeLaLista) no lleva archivo: apunta al último nodo.
    */
   private ultimaLista: { tipo: string; nodos: Nodo[] } | undefined;
+  /** listas que recibió la ACCION, para sugerir el archivo correcto cuando algo falla */
+  private listasRecibidas: { nombre: string; circular: boolean }[] = [];
 
   private listaDesde(param: Param, fs: SistemaDeArchivos): Value {
     const tipo = param.type as Extract<TypeNode, { kind: "puntero" }>;
     const registro = this.types.get(tipo.target.toLowerCase());
     if (!registro) throw new RuntimeError(`El tipo "${tipo.target}" no está declarado.`, param.pos);
-    const contenido = fs.leer(param.name, ".tsv");
+    // Que la lista sea circular no está en el tipo (el NODO es el mismo): lo dice la
+    // consigna, y se indica con el nombre del archivo, PRIM.circular.tsv
+    const simple = fs.leer(param.name, ".tsv");
+    const circular = fs.leer(param.name, ".circular.tsv");
+    if (simple !== undefined && circular !== undefined) {
+      throw new RuntimeError(
+        `Para la lista "${param.name}" hay dos archivos: ${param.name}.tsv y ${param.name}.circular.tsv. ` +
+          "Dejá uno solo: .circular.tsv si la consigna dice que la lista es circular, .tsv si no.",
+        param.pos
+      );
+    }
+    const esCircular = circular !== undefined;
+    const contenido = simple ?? circular;
 
     if (contenido === undefined) {
       throw new RuntimeError(
         `No encontré los nodos de la lista "${param.name}", que la ACCION recibe como parámetro. ` +
-          `Tendría que estar en ${fs.ruta(param.name, ".tsv")}: una fila por nodo, en el orden de la lista, ` +
-          "con los nombres de los campos en la primera (sin los punteros, que se enlazan solos). " +
-          'Usá el comando "AED: Generar plantilla de datos".',
+          `Tendría que estar en ${fs.ruta(param.name, ".tsv")} (o ${param.name}.circular.tsv si la lista es circular): ` +
+          "una fila por nodo, en el orden de la lista, con los nombres de los campos en la primera " +
+          '(sin los punteros, que se enlazan solos). Usá el comando "AED: Generar plantilla de datos".',
         param.pos
       );
     }
@@ -202,13 +216,17 @@ class Interpreter {
     const enlaces = registro.fields.filter(
       (f) => f.type.kind === "puntero" && f.type.target.toLowerCase() === registro.name.toLowerCase()
     );
+    // en una circular el último sigue en el primero (y el anterior del primero es el último)
+    const primero = esCircular ? nodos[0] : undefined;
+    const ultimo = esCircular ? nodos[nodos.length - 1] : undefined;
     nodos.forEach((nodo, i) => {
       for (const campo of enlaces) {
-        const vecino = /^ant/i.test(campo.name) ? nodos[i - 1] : nodos[i + 1];
+        const vecino = /^ant/i.test(campo.name) ? (nodos[i - 1] ?? ultimo) : (nodos[i + 1] ?? primero);
         (nodo.valor as RecordVal).fields.set(campo.name.toLowerCase(), vecino ?? NIL);
       }
     });
     this.ultimaLista = { tipo: registro.name, nodos };
+    this.listasRecibidas.push({ nombre: param.name, circular: esCircular });
     return nodos[0] ?? NIL;
   }
 
@@ -404,10 +422,21 @@ class Interpreter {
       throw new RuntimeError(
         `El programa superó ${this.maxSteps.toLocaleString("es-AR")} instrucciones: casi seguro hay un ciclo infinito ` +
           "(revisá el AVZ que supera el delimitador, la guarda NFDS/NFDA, el LEER al final del ciclo, " +
-          "o en una lista el p := *p.prox que avanza al siguiente nodo).",
+          "o en una lista el p := *p.prox que avanza al siguiente nodo)." +
+          this.pistaListaCircular(),
         pos
       );
     }
+  }
+
+  /** en una circular no hay NIL: un recorrido MIENTRAS p <> NIL no termina nunca */
+  private pistaListaCircular(): string {
+    const circular = this.listasRecibidas.find((l) => l.circular);
+    if (!circular) return "";
+    return (
+      ` La lista "${circular.nombre}" se cargó como circular (${circular.nombre}.circular.tsv): ahí ningún nodo ` +
+      `apunta a NIL. Si la consigna no dice que es circular, el archivo va como ${circular.nombre}.tsv.`
+    );
   }
 
   private async execBlock(stmts: Stmt[], env: Env): Promise<void> {
@@ -522,9 +551,14 @@ class Interpreter {
   /** el nodo al que apunta un puntero, con los errores típicos de listas explicados */
   private nodoApuntado(valor: Value, nombre: string, pos: Pos, uso = "acceder al nodo"): Nodo {
     if (valor instanceof Nil) {
+      const simple = this.listasRecibidas.find((l) => !l.circular);
       throw new RuntimeError(
         `"${nombre}" vale NIL: no apunta a ningún nodo, así que no se puede ${uso === "DISPONER" ? "hacer DISPONER" : "acceder a *" + nombre}. ` +
-          `Antes de usar el nodo hay que preguntar ${nombre} <> NIL (o pedirlo con NUEVO(${nombre})).`,
+          `Antes de usar el nodo hay que preguntar ${nombre} <> NIL (o pedirlo con NUEVO(${nombre})).` +
+          (simple
+            ? ` Si la lista que recibe la ACCION es circular, su archivo se llama ${simple.nombre}.circular.tsv: ` +
+              `como ${simple.nombre}.tsv el último nodo apunta a NIL.`
+            : ""),
         pos
       );
     }
@@ -533,8 +567,8 @@ class Interpreter {
     }
     if (valor.liberado) {
       throw new RuntimeError(
-        `"${nombre}" apunta a un nodo que ya se liberó con DISPONER: ese nodo ya no existe. ` +
-          "Después de DISPONER(p) no se usa más *p.",
+        `"${nombre}" apunta a un nodo que ya se liberó (con DISPONER o BORRAR): ese nodo ya no existe. ` +
+          "Un puntero que apuntaba a un nodo liberado hay que moverlo o ponerlo en NIL antes de volver a usarlo.",
         pos
       );
     }
@@ -948,6 +982,8 @@ class Interpreter {
         return this.existe;
       case "ident": {
         const cell = env.lookup(expr.name);
+        // V y F de la teoría, cuando no hay una variable que se llame así
+        if (!cell && /^[vf]$/i.test(expr.name)) return expr.name.toLowerCase() === "v";
         if (!cell) {
           const sub = this.subprograms.get(expr.name.toLowerCase());
           if (sub) {
@@ -988,6 +1024,27 @@ class Interpreter {
               ? recurso.fda
               : (recurso as SecuenciaAbierta).fds;
           return key.startsWith("n") ? !fin : fin;
+        }
+        // ASCII(c): el código del carácter, como lo usa la guía (ej. 4.9: ASCII('A') = 65)
+        if (key === "ascii") {
+          if (expr.args.length !== 1) {
+            throw new RuntimeError("ASCII recibe un solo carácter: ASCII(c).", expr.pos);
+          }
+          const c = await this.eval(expr.args[0], env);
+          if (typeof c === "number") {
+            throw new RuntimeError(
+              `ASCII recibe un carácter y se le pasó el número ${c}. Si es un carácter, va entre comillas: ASCII('${c}').`,
+              expr.pos
+            );
+          }
+          if (typeof c !== "string" || c.length !== 1) {
+            throw new RuntimeError(
+              `ASCII recibe un solo carácter y se le pasó "${formatValue(c)}". ` +
+                "Para un texto, se recorre carácter por carácter: ASCII(texto[i]).",
+              expr.pos
+            );
+          }
+          return c.charCodeAt(0);
         }
         if (key === "abso" || key === "trunc" || key === "redond") {
           const nombre = key.toUpperCase();

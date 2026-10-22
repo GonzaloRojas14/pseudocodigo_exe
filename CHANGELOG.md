@@ -7,6 +7,17 @@
 - Un parámetro `Puntero a NODO` de la ACCION recibe la lista hecha desde `<nombre>.tsv`, un nodo por fila; `ULT` apunta al último nodo de esa lista y no lleva archivo. "AED: Generar plantilla de datos" crea el `.tsv` de la lista con las columnas del nodo, sin los punteros.
 - Un registro suelto como parámetro (`N: NODO`) se carga de su `.tsv`, con el encabezado y una fila. Antes se tomaba el encabezado como valor.
 - Se aceptan los comentarios entre llaves `{ CASO 1 }`, los cierres con espacio (`FIN SI`, `FIN MIENTRAS`, `FIN REGISTRO`), los parámetros después del `ES` (`ACCION ELIM ES (...)`), y varios nombres con el mismo tipo en los parámetros (`PRIM, ULT: Puntero a NODO`).
+- **Listas circulares por parámetro**: si la consigna dice que la lista que recibe la ACCION es circular, su archivo se llama `PRIM.circular.tsv` y el último nodo queda apuntando al primero (en una doble, también el `ant` del primero al último). El pseudocódigo no cambia. Si el nombre del archivo no coincide con cómo se recorre la lista, el error sugiere el correcto.
+- `ASCII(c)` da el código de un carácter, como lo usa la guía (ejercicio 4.9).
+- **Tipos con nombre para cualquier tipo**, no solo REGISTRO: `vector = ARREGLO[1..N] de entero` y después `PROCEDIMIENTO P(var v : vector)`, como en la guía (TP 6). También `punt = Puntero a NODO`, `dia = 1..31`, `nombre = AN(30)`, y un tipo con nombre que usa otro. Antes daba "no está declarado como REGISTRO".
+- `Y` y `O` se pueden usar como nombres de variable (`X, Y : entero`, `P(x, y)`, `Y := 3`), como en la guía: son operadores solo entre dos operandos.
+- `V` y `F` valen verdadero y falso, como en la teoría (`ES_PRIMO := V`), salvo que haya una variable con ese nombre.
+- Las subacciones de la guía: `Subacción X es; ... FSubacción;` y `Acción Calc (A, B: entero): entero es ... Faccion` dentro del Ambiente.
+- Una FUNCION sin parámetros avisa: según la teoría, su lista de parámetros no puede estar vacía.
+- **La notación de la Guía de Trabajos Prácticos 2026**: los algoritmos de LISTA_CIRCULAR y LISTA_DOBLE de los Complementos Teóricos corren transcriptos tal cual (salvo tres errores de la propia guía que la extensión detecta: `ANT` sin declarar, el tipo `punt` y un `Fsi` que falta). Se aceptan `Ent.`, `Fsi`, `Fmientras`, `Fpara`, `Fsegún`, `Freg`, `Facción.`, `Según X` sin `HACER`, conjuntos con rangos como `OP En [1 .. 5]`, y el nodo apuntado escrito después del puntero, `P*.PROX` (en la guía, `P★.PROX`; el ★ pegado del PDF se acepta con un aviso).
+- **El dialecto del Anexo de las actividades formativas**: `fin_reg`, parámetros separados por `;`, `Procedimiento X(...);` sin `ES`, y `ABRIR(arch)` sin modo, que es lectura.
+- Un `ARCHIVO` puede leer sus datos de un `.csv` separado por comas si no está el `.tsv`.
+- Todas las cargas y operaciones de listas de la teoría (insertar al inicio, al final y en orden, eliminar por valor, pilas y colas) corren copiadas textuales del apunte, y quedan verificadas con un test.
 - Ejemplo nuevo: `listas.frre`.
 
 ## 0.11.1

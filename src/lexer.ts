@@ -82,6 +82,11 @@ const KEYWORDS: Record<string, KeywordSpec> = {
   finfuncion: { type: "FIN_FUNCION", notation: "vieja" },
   finfunción: { type: "FIN_FUNCION", notation: "vieja" },
   procedimiento: { type: "PROCEDIMIENTO" },
+  // la guía (corte de control del TP 2) escribe "Subacción X es; ... FSubacción;"
+  subaccion: { type: "PROCEDIMIENTO", notation: "vieja" },
+  subacción: { type: "PROCEDIMIENTO", notation: "vieja" },
+  fsubaccion: { type: "FIN_PROCEDIMIENTO", notation: "vieja" },
+  fsubacción: { type: "FIN_PROCEDIMIENTO", notation: "vieja" },
   fin_procedimiento: { type: "FIN_PROCEDIMIENTO", notation: "moderna" },
   finprocedimiento: { type: "FIN_PROCEDIMIENTO", notation: "vieja" },
   fin_proc: { type: "FIN_PROCEDIMIENTO", notation: "vieja" },
@@ -94,6 +99,18 @@ const KEYWORDS: Record<string, KeywordSpec> = {
   registro: { type: "REGISTRO" },
   fin_registro: { type: "FIN_REGISTRO", notation: "moderna" },
   finregistro: { type: "FIN_REGISTRO", notation: "vieja" },
+  // el Anexo de sintaxis de las actividades formativas cierra el registro con fin_reg
+  fin_reg: { type: "FIN_REGISTRO", notation: "moderna" },
+  // cierres abreviados de la Guía de Trabajos Prácticos (Complementos Teóricos): Fsi, Fmientras, Freg, Facción
+  freg: { type: "FIN_REGISTRO", notation: "vieja" },
+  fsi: { type: "FIN_SI", notation: "vieja" },
+  fmientras: { type: "FIN_MIENTRAS", notation: "vieja" },
+  fpara: { type: "FIN_PARA", notation: "vieja" },
+  fsegun: { type: "FIN_SEGUN", notation: "vieja" },
+  fsegún: { type: "FIN_SEGUN", notation: "vieja" },
+  faccion: { type: "FIN_ACCION", notation: "vieja" },
+  facción: { type: "FIN_ACCION", notation: "vieja" },
+  finreg: { type: "FIN_REGISTRO", notation: "vieja" },
   arreglo: { type: "ARREGLO" },
   archivo: { type: "ARCHIVO" },
   secuencia: { type: "SECUENCIA" },
@@ -382,6 +399,13 @@ export function tokenize(source: string): LexResult {
       const lower = word.toLowerCase();
       let kw: (typeof KEYWORDS)[string] | undefined = KEYWORDS[lower];
 
+      // "Ent." es ENTONCES abreviado, como en los Complementos Teóricos de la guía
+      if (lower === "ent" && at() === ".") {
+        advance();
+        push("ENTONCES", "ENTONCES", start, sl, sc);
+        continue;
+      }
+
       // Primitivas de secuencia que además son nombres de variable naturalísimos.
       // "arr" es ARR(sec) —arrancar—, pero también es como todo el mundo llama a
       // un arreglo; las filminas de la cátedra usan las dos cosas. Se resuelve por
@@ -393,6 +417,25 @@ export function tokenize(source: string): LexResult {
       }
       // "puntero" es palabra clave solo en "Puntero a NODO"; si no, es un nombre de variable
       if (lower === "puntero" && !/^\s+a\s/i.test(source.slice(i))) kw = undefined;
+
+      // "F Subacción ;" con espacio, como en la guía
+      if (lower === "f" && /^[ \t]+subacci[oó]n(?![\p{L}\p{N}_])/iu.test(source.slice(i))) {
+        const m = /^[ \t]+subacci[oó]n/iu.exec(source.slice(i))!;
+        advance(m[0].length);
+        kw = KEYWORDS.fsubaccion;
+      }
+
+      // "y" y "o" son los operadores lógicos solo entre dos operandos: (a > 1) Y (b < 2).
+      // En "X, Y : entero", "P(x, y)" o "Y := 3" son variables, como las usa la guía.
+      if (lower === "y" || lower === "o") {
+        const previo = tokens[tokens.length - 1]?.type;
+        const finDeOperando =
+          previo !== undefined &&
+          ["IDENT", "NUMBER", "STRING", ")", "]", "VERDADERO", "FALSO", "NIL", "EXISTE", "DEREF", "TIPO"].includes(previo);
+        const siguienteEsOperando = /^\s*([\p{L}_\d(\x27"*\-]|\u201c|\u2018)/u.test(source.slice(i)) &&
+          !/^\s*(:=|:|,|\)|\]|;|\.|\[|=)/.test(source.slice(i));
+        if (!(finDeOperando && siguienteEsOperando)) kw = undefined;
+      }
 
       if (lower === "fin") {
         const cierre = CIERRES_CON_ESPACIO.exec(source.slice(i));
@@ -430,14 +473,9 @@ export function tokenize(source: string): LexResult {
           mode = frag;
         }
         mode = mode.replace(/[^ES]/g, "");
-        if (!mode) {
-          notes.push({
-            pos: posAt(modeStart, msl, msc),
-            message: "Falta el modo de apertura: ABRIR E/(arch), ABRIR /S(arch) o ABRIR E/S(arch).",
-            severity: "error",
-          });
-          mode = "E";
-        }
+        // sin modo es lectura: el Anexo de sintaxis de la cátedra da ABRIR(arch) como
+        // equivalente de ABRIR E(arch)
+        if (!mode) mode = "E";
         tokens.push({
           type: "OPENMODE",
           value: mode === "SE" ? "ES" : mode,
@@ -502,6 +540,32 @@ export function tokenize(source: string): LexResult {
       continue;
     }
 
+    // P★.PROX: así escribe la guía el nodo apuntado (Ejercicios Complementarios del TP 4).
+    // Al copiar del PDF llega como ★ o como el símbolo U+F0AB: nunca es una multiplicación.
+    if (ch === "\u2605" || ch === "\uf0ab") {
+      const previo = tokens[tokens.length - 1]?.type;
+      advance();
+      notes.push({
+        pos: posAt(start, sl, sc),
+        message: "El ★ viene de copiar del PDF: el nodo apuntado se escribe P*.PROX (o *P.PROX, o P^.PROX).",
+        severity: "warning",
+      });
+      const despuesDeOperando = previo === "IDENT" || previo === ")" || previo === "]";
+      push(despuesDeOperando ? "DEREF" : "DEREF_PREFIJO", "*", start, sl, sc);
+      continue;
+    }
+    // P*.PROX: el * pegado después del puntero y seguido de ".campo" es el nodo apuntado
+    // (una multiplicación nunca sigue con ".campo")
+    if (ch === "*" && at(1) !== "*" && tokens.length > 0) {
+      const previo = tokens[tokens.length - 1].type;
+      const despuesDeOperando = previo === "IDENT" || previo === ")" || previo === "]";
+      if (despuesDeOperando && /^\s*\.\s*[\p{L}_]/u.test(source.slice(i + 1))) {
+        advance();
+        push("DEREF", "*", start, sl, sc);
+        continue;
+      }
+    }
+
     // p^.dato: el puntero desreferenciado, escrito después del nombre (= *p.dato).
     // Es desreferencia si le sigue ".campo" o si cierra el operando (p^ = q^).
     if (ch === "^" && tokens.length > 0) {
@@ -510,7 +574,7 @@ export function tokenize(source: string): LexResult {
       const despuesDeOperando = previo === "IDENT" || previo === ")" || previo === "]";
       const esDeref =
         despuesDeOperando &&
-        (/^\.\s*[\p{L}_]/u.test(sigue) || /^\s*($|[),;\]=<>\n:]|o\b|y\b|entonces\b|hacer\b)/i.test(sigue));
+        (/^\s*\.\s*[\p{L}_]/u.test(sigue) || /^\s*($|[),;\]=<>\n:]|o\b|y\b|entonces\b|hacer\b)/i.test(sigue));
       if (esDeref) {
         advance();
         push("DEREF", ch, start, sl, sc);
