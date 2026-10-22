@@ -14,6 +14,7 @@ Hecha por **Rojas Gonzalo**, estudiante de Ingeniería en Sistemas de Informaci�
 - **Marca los errores mientras escribís**, con mensajes que explican la regla de la cátedra en vez de un "syntax error" pelado: un `FIN_SI` que falta, un campo que no coincide con el registro declarado, una variable que se usa sin haberle asignado nunca un valor, un `SI ... ENTONCES:` con dos puntos de más.
 - **Avisa de los errores clásicos.** Un `MIENTRAS` cuya condición ya es falsa al llegar (y por eso no entra nunca), un `PARA` cuyos límites no dan ninguna vuelta, o un ciclo infinito, que se corta solo con un mensaje que apunta a la causa.
 - **Respeta la semántica de la cátedra**, no la "parecida": `/` es división real y `DIV`/`MOD` son enteras; los registros se comparan campo por campo en el orden en que fueron declarados (por eso una FECHA se declara `anio, mes, dia`); los subrangos y enumerados se validan al asignar; los parámetros van por valor salvo que lleven `var`.
+- **Ejecuta listas con punteros**: `NUEVO`, `DISPONER`, `NIL` y `*p.dato`, con listas simples, dobles y circulares, pilas y colas, escritas como las pide la cátedra. Ver [Listas con punteros](#listas-con-punteros).
 - **Acepta las dos notaciones**: la moderna (`Proceso`, `SINO`, `FIN_SI`) y la de las plantillas viejas (`Algoritmo`, `Contrario`, `FinSi`), sin distinguir mayúsculas, y podés mezclarlas — los propios materiales de la cátedra las mezclan.
 - **Aguanta el copiar y pegar** desde los PDF y las filminas: comillas tipográficas, el menos Unicode, `≠ ≤ ≥ × ÷`, espacios duros. Corre igual y te dice cuál es la forma correcta.
 
@@ -132,6 +133,120 @@ Y si declaraste `ARCHIVO de venta ordenado por provincia y sucursal`, **se verif
 
 Valen lo mismo que en la cátedra: se prenden cuando el último `LEER` o `AVZ` **no trajo nada**, no cuando el cursor llega al final. Eso es lo que hace que el último registro se procese y que las plantillas de mezcla y actualización funcionen tal como están escritas en los apuntes.
 
+## Listas con punteros
+
+Las listas de la unidad de estructuras dinámicas se escriben y se ejecutan como las enseña la cátedra: el nodo es un `REGISTRO` con un campo que apunta al siguiente, y la lista se maneja con punteros externos (`PRIM`, `ULT`, auxiliares).
+
+### Cómo se escriben
+
+```
+ACCION lista_ordenada ES
+    Ambiente
+        NODO = REGISTRO
+            dato : entero
+            prox : Puntero a NODO
+        FIN_REGISTRO
+
+        PRIM, p, q, a : Puntero a NODO
+        valor : entero
+
+    Proceso
+        // carga ordenada: cada valor nuevo se ubica en su lugar
+        PRIM := NIL
+        LEER(valor)
+        MIENTRAS valor <> 0 HACER
+            NUEVO(p)
+            *p.dato := valor
+            q := PRIM
+            a := NIL
+            MIENTRAS (q <> NIL) Y (*q.dato < valor) HACER
+                a := q
+                q := *q.prox
+            FIN_MIENTRAS
+            SI a = NIL ENTONCES          // va primero (o la lista estaba vacía)
+                *p.prox := PRIM
+                PRIM := p
+            SINO                         // va entre a y q
+                *p.prox := q
+                *a.prox := p
+            FIN_SI
+            LEER(valor)
+        FIN_MIENTRAS
+
+        // recorrido
+        p := PRIM
+        MIENTRAS p <> NIL HACER
+            ESCRIBIR(*p.dato)
+            p := *p.prox
+        FIN_MIENTRAS
+
+        // eliminación: se busca, se desengancha y se libera el nodo
+        LEER(valor)
+        q := PRIM
+        a := NIL
+        MIENTRAS (q <> NIL) Y (*q.dato <> valor) HACER
+            a := q
+            q := *q.prox
+        FIN_MIENTRAS
+        SI q = NIL ENTONCES
+            ESCRIBIR("Error, el valor no existe")
+        SINO
+            SI a = NIL ENTONCES
+                PRIM := *q.prox
+            SINO
+                *a.prox := *q.prox
+            FIN_SI
+            DISPONER(q)
+        FIN_SI
+FIN_ACCION
+```
+
+| Para | Se escribe | También se acepta |
+|---|---|---|
+| Declarar el puntero | `p : Puntero a NODO` | un tipo con nombre: `punt = Puntero a NODO` y `p : punt` |
+| Lista vacía / fin de lista | `NIL` | `NULO` |
+| Pedir un nodo | `NUEVO(p)` | |
+| Liberar un nodo | `DISPONER(p)` | `BORRAR(p)` |
+| El campo del nodo apuntado | `*p.dato` | `p^.dato`, `p*.dato` (la guía de TP escribe `P★.PROX`) |
+| El nodo siguiente | `*(*p.prox).dato` | |
+| Avanzar | `p := *p.prox` | |
+| Comparar punteros | `p = q`, `p <> NIL` | solo `=` y `<>`: para ordenar se comparan los datos, `*p.dato < *q.dato` |
+
+`*p.dato` es "el dato del nodo al que apunta `p`"; `p.dato`, sin el asterisco, es un error de notación, y la extensión lo marca. El `*` toma solo el puntero: en `*(*p.prox).dato` el paréntesis indica que primero se llega al siguiente nodo.
+
+**Lista doble**: el nodo lleva además `ant : Puntero a NODO`, y se mantienen `PRIM` y `ULT` (el `ant` del primero y el `prox` del último valen `NIL`). Al insertar o eliminar en el medio se actualizan los cuatro punteros: `*(*p.ant).prox := *p.prox` y `*(*p.prox).ant := *p.ant`.
+
+**Lista circular**: el último nodo apunta al primero (`*ULT.prox := PRIM`), así que no hay `NIL`; se recorre hasta volver al principio:
+
+```
+p := PRIM
+REPETIR
+    ESCRIBIR(*p.dato)
+    p := *p.prox
+HASTA QUE p = PRIM
+```
+
+**Pilas y colas** son listas con acceso restringido: una pila inserta y extrae por `PRIM` (el tope); una cola inserta por `ULT` y extrae por `PRIM`, y al vaciarse vuelve a dejar `ULT := NIL`.
+
+También corren tal cual los algoritmos `LISTA_CIRCULAR` y `LISTA_DOBLE` de los Complementos Teóricos de la Guía de Trabajos Prácticos 2026, con su notación (`Ent.`, `Fsi`, `Fmientras`, `Freg`, `Según OP`, `OP En [1 .. 5]`, `Facción.`).
+
+### Qué pasa al ejecutar
+
+- `NUEVO(p)` crea el nodo en memoria y deja a `p` apuntándolo. Cada nodo tiene una dirección, que es lo que muestra `ESCRIBIR(p)` (`0x1000`, `0x1010`, …), o `NIL`.
+- El puntero es la dirección del nodo, no una copia: después de `p := q` los dos apuntan al **mismo** nodo, y cambiar `*p.dato` cambia también `*q.dato`.
+- La lista no está guardada en ningún lado como tal: es la cadena `PRIM → prox → … → NIL`. Los nodos existen mientras corre el algoritmo.
+- `DISPONER(p)` libera el nodo. Si otro puntero lo seguía apuntando y se usa, la ejecución se corta con un aviso en vez de leer basura.
+- Si la `ACCION` recibe la lista hecha (`ACCION ELIM ES (PRIM : Puntero a NODO)`), sus nodos se cargan de un archivo de datos, como se explica en [Los tres formatos](#los-tres-formatos).
+
+### Los errores que explica
+
+- Usar `*p.dato` cuando `p` vale `NIL`: dice que hay que preguntar `p <> NIL` antes.
+- Usar un nodo después de liberarlo con `DISPONER`.
+- Guardar un dato en el puntero (`p := 5`) en lugar de en el nodo (`*p.dato := 5`).
+- Comparar punteros con `<` o `>`.
+- Escribir `p.dato` sin el `*`, o pedir `*x` de algo que no es un puntero.
+- Un recorrido que se olvida de avanzar con `p := *p.prox` (ciclo infinito).
+
 ## Qué entra y qué todavía no
 
 **Anda todo el lenguaje hasta archivos**: `ACCION/Ambiente/Proceso`, todos los tipos (`entero`, `real`, `caracter`, `logico`, `AN(n)`, `N(n)`, `N(e,d)`, subrangos, enumerados), registros anidados, arreglos y matrices de cualquier dimensión, `SI`/`SEGUN`/`MIENTRAS`/`REPETIR`/`PARA`, funciones y procedimientos con paso por valor y por `var`, recursividad, `ESCRIBIR`/`LEER` por pantalla y teclado, **archivos secuenciales**, **secuencias** y **archivos indexados**. Con eso corren los ejercicios de corte de control, mezcla, actualización unitaria y por lotes, procesos estadísticos y los ABM indexados.
@@ -140,9 +255,7 @@ Los parámetros van por valor o por referencia (`var`), separados con `,` o `;`,
 
 Un archivo `INDEXADO por clave` se accede por clave, no se recorre: se carga la clave en el registro, se hace `LEER`, se pregunta `SI EXISTE` y recién ahí se opera (`ESCRIBIR` da de alta, `RE-ESCRIBIR` modifica, `ELIMINAR` da de baja física).
 
-**Listas con punteros**: `Puntero a NODO`, `NIL` (o `NULO`), `NUEVO(p)` y `DISPONER(p)` (o `BORRAR(p)`, como en la teoría; con dos argumentos, `BORRAR(arch, reg)` sigue siendo la baja en un indexado). Al nodo apuntado se accede con `*p.dato`, `p^.dato` o `p*.dato` (significan lo mismo; la guía de trabajos prácticos escribe `P★.PROX`), y se anida con paréntesis: `*(*p.ant).prox := q`. Corren las listas simples, dobles y circulares, las cargas apilada, encolada y ordenada, y los cuatro casos de inserción y de eliminación tal como están en las filminas, incluidos los `{ comentarios }` entre llaves y los cierres con espacio (`FIN SI`, `FIN REGISTRO`).
-
-Los errores típicos se explican en vez de colgarse: usar `*p` cuando `p` vale `NIL`, usar un nodo después de `DISPONER`, guardar un dato en el puntero en lugar de en el nodo, o escribir `p.dato` sin el `*`. `ESCRIBIR(p)` muestra la dirección del nodo (`0x1000`) o `NIL`.
+**Listas con punteros**: simples, dobles y circulares, pilas y colas, con `NUEVO`, `DISPONER`, `NIL` y `*p.dato`. Está todo en [Listas con punteros](#listas-con-punteros).
 
 **Todavía no se ejecuta:**
 

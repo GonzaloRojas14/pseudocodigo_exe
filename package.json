@@ -1,8 +1,8 @@
 {
   "name": "aed-pseudocodigo",
   "displayName": "AED Pseudocódigo (UTN-FRRe)",
-  "description": "Resaltado, diagnósticos y ejecución del pseudocódigo de Algoritmos y Estructuras de Datos (UTN-FRRe).",
-  "version": "0.12.0",
+  "description": "Resaltado, diagnósticos y ejecución del pseudocódigo de Algoritmos y Estructuras de Datos (UTN-FRRe): archivos, arreglos y listas con punteros.",
+  "version": "0.12.1",
   "publisher": "RojasGonzalo007",
   "author": {
     "name": "Rojas Gonzalo",
@@ -37,7 +37,9 @@
     "frre",
     "algoritmos",
     "estructuras de datos",
-    "espanol"
+    "espanol",
+    "listas",
+    "punteros"
   ],
   "qna": false,
   "main": "./dist/extension.js",

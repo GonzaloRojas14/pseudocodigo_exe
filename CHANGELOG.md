@@ -1,5 +1,9 @@
 # Cambios
 
+## 0.12.1
+
+- La página de la extensión explica las listas con punteros: cómo se escriben según la cátedra (nodo, `NUEVO`, `DISPONER`, `NIL`, `*p.dato`, listas dobles y circulares, pilas y colas), qué pasa al ejecutar y qué errores explica, con un ejemplo completo.
+
 ## 0.12.0
 
 - **Se ejecutan las listas con punteros**: `Puntero a NODO`, `NIL` (o `NULO`), `NUEVO(p)`, `DISPONER(p)` (o `BORRAR(p)`, como en la teoría), y el nodo apuntado escrito `*p.dato` o `p^.dato`, anidado con paréntesis como en `*(*p.ant).prox := q`. Corren las listas simples, dobles y circulares y los cuatro casos de inserción y eliminación de las filminas.
